@@ -913,5 +913,40 @@ if (pdfForm) {
   };
 }
 
+// 3D Animated Splash Screen Handler
+function initSplashScreen() {
+  const splash = $("#splashScreen");
+  const progress = $("#splashProgress");
+  const percentText = $("#splashPercent");
+  if (!splash) return null;
+
+  let currentPercent = 0;
+  const interval = setInterval(() => {
+    if (currentPercent < 90) {
+      currentPercent += Math.floor(Math.random() * 12) + 6;
+      if (currentPercent > 90) currentPercent = 90;
+    }
+    if (progress) progress.style.width = `${currentPercent}%`;
+    if (percentText) percentText.textContent = `${currentPercent}%`;
+  }, 80);
+
+  return function finishSplash() {
+    clearInterval(interval);
+    if (progress) progress.style.width = "100%";
+    if (percentText) percentText.textContent = "100%";
+
+    setTimeout(() => {
+      splash.classList.add("fade-out");
+      setTimeout(() => {
+        splash.style.display = "none";
+      }, 800);
+    }, 400);
+  };
+}
+
+const finishSplash = initSplashScreen();
+
 // Initial setup
-load();
+load().finally(() => {
+  if (finishSplash) finishSplash();
+});
