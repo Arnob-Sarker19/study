@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { getGoogleDriveAccessToken, deleteFileFromGoogleDrive, updateGoogleDriveFileMetadata } from "./gdrive.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -60,7 +61,7 @@ async function requireAuth(req) {
 
 export default async function handler(req, res) {
   try {
-    const user = await requireAuth(req);
+    await requireAuth(req);
 
     if (req.method === "GET") {
       const { data, error } = await supabase.from("pdfs").select("*").order("created_at", { ascending: false });
@@ -92,6 +93,8 @@ export default async function handler(req, res) {
       if (!id || !title?.trim() || !subject?.trim() || !normalized) {
         return res.status(400).json({ error: "ID, title, subject and URL are required." });
       }
+
+      // Update row in Supabase database
       const { data, error } = await supabase.from("pdfs").update({
         title: title.trim(),
         subject: subject.trim(),
@@ -101,12 +104,58 @@ export default async function handler(req, res) {
         file_type: fileType === "photo" ? "photo" : "pdf"
       }).eq("id", id).select().single();
       if (error) throw error;
+
+      // Sync metadata changes to Google Drive if applicable
+      const googleDriveId = driveId(normalized);
+      if (googleDriveId) {
+        try {
+          const accessToken = await getGoogleDriveAccessToken();
+          if (accessToken) {
+            await updateGoogleDriveFileMetadata(accessToken, googleDriveId, title.trim(), String(description || "").trim());
+          }
+        } catch (gErr) {
+          console.warn("Google Drive metadata update warning:", gErr.message);
+        }
+      }
+
       return res.status(200).json(enrich(data));
     }
 
     if (req.method === "DELETE") {
       const id = String(req.query.id || "");
       if (!id) return res.status(400).json({ error: "Missing ID" });
+
+      // 1. Fetch item details before deletion to get Storage/Drive URLs
+      const { data: item } = await supabase.from("pdfs").select("*").eq("id", id).single();
+
+      if (item) {
+        // 2. Delete file from Google Drive if Google Drive ID exists
+        const googleDriveId = driveId(item.drive_url);
+        if (googleDriveId) {
+          try {
+            const accessToken = await getGoogleDriveAccessToken();
+            if (accessToken) {
+              await deleteFileFromGoogleDrive(accessToken, googleDriveId);
+            }
+          } catch (gErr) {
+            console.warn("Google Drive file delete warning:", gErr.message);
+          }
+        }
+
+        // 3. Delete file from Supabase Storage if uploaded via Supabase
+        if (item.drive_url && item.drive_url.includes("supabase.co/storage")) {
+          try {
+            const storagePath = item.drive_url.split("/study-files/")[1];
+            if (storagePath) {
+              await supabase.storage.from("study-files").remove([decodeURIComponent(storagePath)]);
+            }
+          } catch (sErr) {
+            console.warn("Supabase Storage delete warning:", sErr.message);
+          }
+        }
+      }
+
+      // 4. Delete row from database
       const { error } = await supabase.from("pdfs").delete().eq("id", id);
       if (error) throw error;
       return res.status(200).json({ ok: true });

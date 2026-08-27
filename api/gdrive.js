@@ -196,6 +196,43 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
   return `https://drive.google.com/file/d/${fileData.id}/view?usp=sharing`;
 }
 
+export async function deleteFileFromGoogleDrive(accessToken, fileId) {
+  if (!accessToken || !fileId) return;
+  try {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!res.ok) {
+      console.warn("Google Drive delete warning:", await res.text());
+    }
+  } catch (err) {
+    console.warn("Google Drive delete error:", err.message);
+  }
+}
+
+export async function updateGoogleDriveFileMetadata(accessToken, fileId, newName, newDescription) {
+  if (!accessToken || !fileId) return;
+  try {
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: newName,
+        description: newDescription
+      })
+    });
+    if (!res.ok) {
+      console.warn("Google Drive update metadata warning:", await res.text());
+    }
+  } catch (err) {
+    console.warn("Google Drive update metadata error:", err.message);
+  }
+}
+
 export default async function handler(req, res) {
   try {
     const isUserOAuth = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
