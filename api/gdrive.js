@@ -16,7 +16,6 @@ export async function getGoogleDriveAccessToken() {
     return null;
   }
 
-  // Handle line breaks in private key string
   privateKey = privateKey.replace(/\\n/g, "\n");
 
   const header = { alg: "RS256", typ: "JWT" };
@@ -61,11 +60,13 @@ export async function getGoogleDriveAccessToken() {
 }
 
 export async function getOrCreateDriveSubjectFolder(accessToken, rootFolderId, subjectName) {
-  if (!rootFolderId) return rootFolderId;
+  if (!rootFolderId) {
+    throw new Error("GOOGLE_DRIVE_FOLDER_ID is missing or not configured.");
+  }
 
-  // Search for existing subject folder inside root folder
-  const query = `name='${subjectName.replace(/'/g, "\\'")}' and '${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}`;
+  const sanitizedSubject = subjectName.replace(/'/g, "\\'");
+  const query = `name='${sanitizedSubject}' and '${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&supportsAllDrives=true&includeItemsFromAllDrives=true`;
 
   const searchRes = await fetch(searchUrl, {
     headers: { Authorization: `Bearer ${accessToken}` }
@@ -76,8 +77,8 @@ export async function getOrCreateDriveSubjectFolder(accessToken, rootFolderId, s
     return searchData.files[0].id;
   }
 
-  // Create new subfolder for the subject
-  const createRes = await fetch("https://www.googleapis.com/drive/v3/files", {
+  // Create new subfolder inside specified parent folder
+  const createRes = await fetch("https://www.googleapis.com/drive/v3/files?supportsAllDrives=true", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -90,13 +91,20 @@ export async function getOrCreateDriveSubjectFolder(accessToken, rootFolderId, s
     })
   });
   const createData = await createRes.json();
+  if (!createRes.ok) {
+    throw new Error(createData.error?.message || "Failed to create folder in Google Drive");
+  }
   return createData.id;
 }
 
 export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fileName, mimeType, buffer }) {
+  if (!parentFolderId) {
+    throw new Error("Google Drive parent folder ID is required for Service Account upload.");
+  }
+
   const metadata = {
     name: fileName,
-    parents: parentFolderId ? [parentFolderId] : []
+    parents: [parentFolderId]
   };
 
   const boundary = "-------314159265358979323846";
@@ -112,7 +120,7 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
   ]);
 
   const uploadRes = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink",
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink,webContentLink",
     {
       method: "POST",
       headers: {
@@ -130,7 +138,7 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
   }
 
   // Make file publicly readable
-  await fetch(`https://www.googleapis.com/drive/v3/files/${fileData.id}/permissions`, {
+  await fetch(`https://www.googleapis.com/drive/v3/files/${fileData.id}/permissions?supportsAllDrives=true`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -147,7 +155,7 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
 
 export default async function handler(req, res) {
   try {
-    const isConfigured = !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+    const isConfigured = !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID);
     const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
 
     let testStatus = "not_configured";

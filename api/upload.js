@@ -91,30 +91,34 @@ export default async function handler(req, res) {
       const sanitizedFileName = (fileName ? fileName.replace(/[^a-zA-Z0-9_.-]/g, "_") : `file_${Date.now()}.${fileExt}`);
       const targetMime = mimeType || (type === "photo" ? "image/jpeg" : "application/pdf");
 
-      // 1. Check if Google Drive API is configured
-      let driveAccessToken = null;
-      try {
-        driveAccessToken = await getGoogleDriveAccessToken();
-      } catch (gErr) {
-        console.warn("Google Drive OAuth warning:", gErr.message);
+      const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
+      let driveUploaded = false;
+
+      // 1. Try Google Drive API upload if keys & GOOGLE_DRIVE_FOLDER_ID are set
+      if (rootFolderId) {
+        try {
+          const driveAccessToken = await getGoogleDriveAccessToken();
+          if (driveAccessToken) {
+            const semesterFolderId = await getOrCreateDriveSubjectFolder(driveAccessToken, rootFolderId, cleanSemester);
+            const subjectFolderId = await getOrCreateDriveSubjectFolder(driveAccessToken, semesterFolderId, cleanSubject);
+            
+            finalUrl = await uploadFileToGoogleDrive({
+              accessToken: driveAccessToken,
+              parentFolderId: subjectFolderId,
+              fileName: sanitizedFileName,
+              mimeType: targetMime,
+              buffer: buffer
+            });
+            storageProvider = "google_drive";
+            driveUploaded = true;
+          }
+        } catch (gErr) {
+          console.warn("Google Drive upload warning (falling back to Supabase Storage):", gErr.message);
+        }
       }
 
-      if (driveAccessToken) {
-        // Multi-level Google Drive structure: [Root Folder] -> [Semester Folder] -> [Subject Folder] -> [File]
-        const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
-        const semesterFolderId = await getOrCreateDriveSubjectFolder(driveAccessToken, rootFolderId, cleanSemester);
-        const subjectFolderId = await getOrCreateDriveSubjectFolder(driveAccessToken, semesterFolderId, cleanSubject);
-        
-        finalUrl = await uploadFileToGoogleDrive({
-          accessToken: driveAccessToken,
-          parentFolderId: subjectFolderId,
-          fileName: sanitizedFileName,
-          mimeType: targetMime,
-          buffer: buffer
-        });
-        storageProvider = "google_drive";
-      } else {
-        // Fallback: Supabase Storage folder structure: uploads/<semester>/<subject>/<timestamp>-<filename>
+      // 2. Fallback to Supabase Storage if Google Drive is not configured or failed
+      if (!driveUploaded) {
         await ensureBucket();
         const semSlug = slugify(cleanSemester);
         const subjectSlug = slugify(cleanSubject);
@@ -145,7 +149,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Please attach a file or provide a cloud link." });
     }
 
-    // 2. Insert record into database
+    // 3. Insert record into database
     const { data, error } = await supabase
       .from("pdfs")
       .insert({
