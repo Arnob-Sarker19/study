@@ -1,9 +1,11 @@
 export default async function handler(req, res) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  
   const host = req.headers.host || "localhost:3000";
-  const protocol = host.includes("localhost") ? "http" : "https";
-  const redirectUri = `${protocol}://${host}/api/auth/google`;
+  const protocol = (host.includes("localhost") || host.includes("127.0.0.1")) ? "http" : "https";
+  const defaultRedirectUri = `${protocol}://${host}/api/auth/google`;
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || defaultRedirectUri;
 
   const { code } = req.query || {};
 
