@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getGoogleDriveAccessToken, getOrCreateDriveSubjectFolder, uploadFileToGoogleDrive } from "./gdrive.js";
+import { getGoogleDriveAccessToken, getOrCreateDriveSubjectFolder, uploadFileToGoogleDrive, parseFolderId } from "./gdrive.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -91,10 +91,10 @@ export default async function handler(req, res) {
       const sanitizedFileName = (fileName ? fileName.replace(/[^a-zA-Z0-9_.-]/g, "_") : `file_${Date.now()}.${fileExt}`);
       const targetMime = mimeType || (type === "photo" ? "image/jpeg" : "application/pdf");
 
-      const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
+      const rootFolderId = parseFolderId(process.env.GOOGLE_DRIVE_FOLDER_ID);
       let driveUploaded = false;
 
-      // 1. Try Google Drive API upload if keys & GOOGLE_DRIVE_FOLDER_ID are set
+      // 1. Try Google Drive API upload if keys & rootFolderId are set
       if (rootFolderId) {
         try {
           const driveAccessToken = await getGoogleDriveAccessToken();

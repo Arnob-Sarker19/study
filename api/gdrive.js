@@ -8,6 +8,16 @@ function base64UrlEncode(str) {
     .replace(/\//g, "_");
 }
 
+export function parseFolderId(rawId) {
+  if (!rawId) return null;
+  const str = String(rawId).trim();
+  const folderMatch = str.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (folderMatch) return folderMatch[1];
+  const queryMatch = str.match(/id=([a-zA-Z0-9_-]+)/);
+  if (queryMatch) return queryMatch[1];
+  return str.replace(/[^a-zA-Z0-9_-]/g, "");
+}
+
 export async function getGoogleDriveAccessToken() {
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -59,7 +69,8 @@ export async function getGoogleDriveAccessToken() {
   return data.access_token;
 }
 
-export async function getOrCreateDriveSubjectFolder(accessToken, rootFolderId, subjectName) {
+export async function getOrCreateDriveSubjectFolder(accessToken, rawRootFolderId, subjectName) {
+  const rootFolderId = parseFolderId(rawRootFolderId);
   if (!rootFolderId) {
     throw new Error("GOOGLE_DRIVE_FOLDER_ID is missing or not configured.");
   }
@@ -98,13 +109,14 @@ export async function getOrCreateDriveSubjectFolder(accessToken, rootFolderId, s
 }
 
 export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fileName, mimeType, buffer }) {
-  if (!parentFolderId) {
+  const cleanParentId = parseFolderId(parentFolderId);
+  if (!cleanParentId) {
     throw new Error("Google Drive parent folder ID is required for Service Account upload.");
   }
 
   const metadata = {
     name: fileName,
-    parents: [parentFolderId]
+    parents: [cleanParentId]
   };
 
   const boundary = "-------314159265358979323846";
@@ -156,7 +168,7 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
 export default async function handler(req, res) {
   try {
     const isConfigured = !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID);
-    const rootFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || null;
+    const rootFolderId = parseFolderId(process.env.GOOGLE_DRIVE_FOLDER_ID);
 
     let testStatus = "not_configured";
     if (isConfigured) {
