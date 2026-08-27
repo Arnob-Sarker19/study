@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07101f"><title>Study Drive Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="bg-glow g1"></div><div class="bg-glow g2"></div>
+<header><a class="brand" href="/"><b class="logo">S</b><span><strong>Study Drive</strong><small>PDF Library</small></span></a><nav><a href="#library">Library</a><button id="adminBtn" class="ghost">Admin</button></nav></header>
+<main>
+<section class="hero"><div><span class="eyebrow">STUDY GROUP RESOURCE HUB</span><h1>Everything you need to study,<br><em>in one place.</em></h1><p>Notes, books and study PDFs organized in one clean library. Files remain on Google Drive, so your website stays lightweight.</p><div class="actions"><a href="#library" class="primary">Explore Library</a><a href="#library" class="secondary">Latest PDFs</a></div></div><div class="mock"><div class="mockbar">● ● ●</div><div class="mocksearch">⌕ &nbsp; Search study materials...</div><div class="mockitem"><b>PDF</b><span>Computer Networks Notes<small>Networking</small></span></div><div class="mockitem"><b>PDF</b><span>Database Management System<small>Database</small></span></div><div class="mockitem"><b>PDF</b><span>Programming Fundamentals<small>Programming</small></span></div></div></section>
+<section id="library" class="library"><div class="heading"><div><span class="eyebrow">RESOURCE LIBRARY</span><h2>Find your study material</h2></div><span class="count"><b id="count">0</b> PDFs</span></div>
+<div class="toolbar"><div class="search">⌕<input id="search" placeholder="Search PDF, subject or keyword..."></div><div id="chips"></div></div>
+<div id="loading" class="state">Loading library...</div><div id="empty" class="state hidden"><h3>No PDFs found</h3><p>Try a different keyword or category.</p></div><div id="grid" class="grid"></div></section>
+</main>
+<footer><b>Study Drive Library</b><span>Files are hosted on Google Drive.</span></footer>
+
+<div id="modal" class="modal hidden"><div class="modalcard">
+<button class="close" id="close">×</button>
+<div id="loginView"><span class="eyebrow">ADMIN ACCESS</span><h2>Manage library</h2><p>Sign in with your Supabase admin account.</p><form id="login"><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required></label><button class="primary full">Sign in</button><div id="loginErr" class="err"></div></form></div>
+<div id="adminView" class="hidden"><div class="adminhead"><div><span class="eyebrow">ADMIN PANEL</span><h2>Manage PDFs</h2></div><button id="logout" class="ghost">Log out</button></div>
+<form id="pdfForm"><input type="hidden" name="id"><label>PDF title<input name="title" required placeholder="Computer Networks Chapter 1"></label><label>Subject<input name="subject" required placeholder="Networking"></label><label>Description<textarea name="description" rows="2"></textarea></label><label>Google Drive link<input name="driveUrl" required placeholder="https://drive.google.com/file/d/..."></label><div class="actions"><button class="primary" id="save">Add PDF</button><button type="button" class="secondary hidden" id="cancel">Cancel</button></div><div id="formMsg"></div></form>
+<div class="listhead"><h3>Current PDFs</h3><span id="adminCount"></span></div><div id="adminList"></div>
+</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/app.js"></script>
+</body></html>
