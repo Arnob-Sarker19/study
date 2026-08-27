@@ -3,8 +3,35 @@ const SUPABASE_URL = "https://nqvmupmzxgytvkewklpo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xdm11cG16eGd5dHZrZXdrbHBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTEyNjksImV4cCI6MjEwMzM4NzI2OX0.zbIEvauFtK3Y7dwWoHR7rNJkyab76Dxx5uRbP_jP5gM";
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Safe DOM Query Selectors & Helper Functions
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
+
+const setText = (s, val) => {
+  const el = typeof s === "string" ? $(s) : s;
+  if (el) el.textContent = val;
+};
+
+const setHTML = (s, val) => {
+  const el = typeof s === "string" ? $(s) : s;
+  if (el) el.innerHTML = val;
+};
+
+const addClass = (s, cls) => {
+  const el = typeof s === "string" ? $(s) : s;
+  if (el) el.classList.add(cls);
+};
+
+const removeClass = (s, cls) => {
+  const el = typeof s === "string" ? $(s) : s;
+  if (el) el.classList.remove(cls);
+};
+
+const toggleClass = (s, cls, force) => {
+  const el = typeof s === "string" ? $(s) : s;
+  if (el) el.classList.toggle(cls, force);
+};
 
 let pdfs = [];
 let activeSemester = null; // null or string 'Semester 1'..'Semester 8'
@@ -29,7 +56,8 @@ function formatDate(v) {
 }
 
 function filtered() {
-  const q = $("#search").value.trim().toLowerCase();
+  const searchEl = $("#search");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
   return pdfs.filter(p => {
     const semName = p.semester || "Semester 1";
     const matchQuery = !q || `${p.title} ${p.subject} ${semName} ${p.description}`.toLowerCase().includes(q);
@@ -49,27 +77,27 @@ async function load() {
 
     const subjectsList = [...new Set(pdfs.map(p => p.subject))].sort();
 
-    // Update Hero Stats Counters
+    // Safe Hero Stats Counters Update
     const pdfCount = pdfs.filter(p => (p.fileType || "pdf") === "pdf").length;
     const photoCount = pdfs.filter(p => p.fileType === "photo").length;
     
-    $("#statCount").textContent = `${pdfs.length}+`;
-    $("#subjectFolderCount").textContent = subjectsList.length;
-    $("#pdfStatCount").textContent = pdfCount;
-    $("#photoStatCount").textContent = photoCount;
+    setText("#statCount", `${pdfs.length}+`);
+    setText("#subjectFolderCount", subjectsList.length);
+    setText("#pdfStatCount", pdfCount);
+    setText("#photoStatCount", photoCount);
 
     // Render Semester Filter Chips
-    $("#semesterChips").innerHTML = `<button class="sem-chip ${!activeSemester ? "active" : ""}" data-sem="all">All Semesters (${pdfs.length})</button>` +
+    setHTML("#semesterChips", `<button class="sem-chip ${!activeSemester ? "active" : ""}" data-sem="all">All Semesters (${pdfs.length})</button>` +
       ALL_SEMESTERS.map(s => {
         const count = pdfs.filter(x => (x.semester || "Semester 1").toLowerCase() === s.toLowerCase()).length;
         const isActive = activeSemester && activeSemester.toLowerCase() === s.toLowerCase();
         return `<button class="sem-chip ${isActive ? "active" : ""}" data-sem="${esc(s)}">${esc(s)} (${count})</button>`;
-      }).join("");
+      }).join(""));
 
     $$("#semesterChips .sem-chip").forEach(btn => {
       btn.onclick = () => {
-        $$("#semesterChips .sem-chip").forEach(x => x.classList.remove("active"));
-        btn.classList.add("active");
+        $$("#semesterChips .sem-chip").forEach(x => removeClass(x, "active"));
+        addClass(btn, "active");
         const sem = btn.dataset.sem;
         if (sem === "all") {
           activeSemester = null;
@@ -84,12 +112,12 @@ async function load() {
 
     render();
   } catch (err) {
-    $("#loading").innerHTML = `<p style="color:#ef4444">${esc(err.message)}</p>`;
+    setHTML("#loading", `<p style="color:#ef4444">${esc(err.message)}</p>`);
   }
 }
 
 function render() {
-  $("#loading").classList.add("hidden");
+  addClass("#loading", "hidden");
   
   if (currentViewMode === "semesters" && !activeSemester && !activeSubjectFolder) {
     renderSemesters();
@@ -102,12 +130,13 @@ function render() {
 
 // 1. Render Semesters Grid (Level 1)
 function renderSemesters() {
-  $("#breadcrumbBar").classList.add("hidden");
-  $("#semestersGrid").classList.remove("hidden");
-  $("#foldersGrid").classList.add("hidden");
-  $("#grid").classList.add("hidden");
+  addClass("#breadcrumbBar", "hidden");
+  removeClass("#semestersGrid", "hidden");
+  addClass("#foldersGrid", "hidden");
+  addClass("#grid", "hidden");
 
-  const q = $("#search").value.trim().toLowerCase();
+  const searchEl = $("#search");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
 
   const semestersMap = ALL_SEMESTERS.map(sem => {
     const semFiles = pdfs.filter(p => (p.semester || "Semester 1").toLowerCase() === sem.toLowerCase());
@@ -124,10 +153,10 @@ function renderSemesters() {
     };
   }).filter(s => !q || s.name.toLowerCase().includes(q) || s.subjects.toLowerCase().includes(q));
 
-  $("#count").textContent = `8 Semesters (${filtered().length} total files)`;
-  $("#empty").classList.toggle("hidden", !!semestersMap.length);
+  setText("#count", `8 Semesters (${filtered().length} total files)`);
+  toggleClass("#empty", "hidden", !!semestersMap.length);
 
-  $("#semestersGrid").innerHTML = semestersMap.map(s => `
+  setHTML("#semestersGrid", semestersMap.map(s => `
     <div class="semester-card" data-sem="${esc(s.name)}">
       <div class="sem-badge-icon">🎓</div>
       <h3 class="sem-title">${esc(s.name)}</h3>
@@ -142,7 +171,7 @@ function renderSemesters() {
         </span>
       </div>
     </div>
-  `).join("");
+  `).join(""));
 
   $$(".semester-card").forEach(card => {
     card.onclick = () => openSemester(card.dataset.sem);
@@ -151,16 +180,17 @@ function renderSemesters() {
 
 // 2. Render Subject-wise Folders (Level 2)
 function renderSubjectFolders() {
-  $("#semestersGrid").classList.add("hidden");
-  $("#foldersGrid").classList.remove("hidden");
-  $("#grid").classList.add("hidden");
+  addClass("#semestersGrid", "hidden");
+  removeClass("#foldersGrid", "hidden");
+  addClass("#grid", "hidden");
 
-  $("#breadcrumbBar").classList.remove("hidden");
-  $("#breadcrumbSem").textContent = activeSemester || "All Semesters";
-  $("#breadcrumbSubSep").classList.add("hidden");
-  $("#breadcrumbSub").classList.add("hidden");
+  removeClass("#breadcrumbBar", "hidden");
+  setText("#breadcrumbSem", activeSemester || "All Semesters");
+  addClass("#breadcrumbSubSep", "hidden");
+  addClass("#breadcrumbSub", "hidden");
 
-  const q = $("#search").value.trim().toLowerCase();
+  const searchEl = $("#search");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
   const subjectsMap = {};
 
   pdfs.forEach(p => {
@@ -187,10 +217,10 @@ function renderSubjectFolders() {
 
   const folderList = Object.values(subjectsMap).sort((a, b) => a.name.localeCompare(b.name));
   
-  $("#count").textContent = `${folderList.length} Subject Folders (${filtered().length} files)`;
-  $("#empty").classList.toggle("hidden", !!folderList.length);
+  setText("#count", `${folderList.length} Subject Folders (${filtered().length} files)`);
+  toggleClass("#empty", "hidden", !!folderList.length);
 
-  $("#foldersGrid").innerHTML = folderList.map(f => `
+  setHTML("#foldersGrid", folderList.map(f => `
     <div class="folder-card" data-folder="${esc(f.name)}">
       <div class="folder-icon-box">📁</div>
       <h3 class="folder-title">${esc(f.name)}</h3>
@@ -205,7 +235,7 @@ function renderSubjectFolders() {
         </span>
       </div>
     </div>
-  `).join("");
+  `).join(""));
 
   $$(".folder-card").forEach(card => {
     card.onclick = () => openSubjectFolder(card.dataset.folder);
@@ -215,28 +245,28 @@ function renderSubjectFolders() {
 // 3. Render Cards Grid (Level 3)
 function renderCardsGrid() {
   const list = filtered();
-  $("#count").textContent = `${list.length} Files`;
-  $("#empty").classList.toggle("hidden", !!list.length);
-  $("#semestersGrid").classList.add("hidden");
-  $("#foldersGrid").classList.add("hidden");
-  $("#grid").classList.remove("hidden");
+  setText("#count", `${list.length} Files`);
+  toggleClass("#empty", "hidden", !!list.length);
+  addClass("#semestersGrid", "hidden");
+  addClass("#foldersGrid", "hidden");
+  removeClass("#grid", "hidden");
 
   if (activeSemester || activeSubjectFolder) {
-    $("#breadcrumbBar").classList.remove("hidden");
-    $("#breadcrumbSem").textContent = activeSemester || "All Semesters";
+    removeClass("#breadcrumbBar", "hidden");
+    setText("#breadcrumbSem", activeSemester || "All Semesters");
     if (activeSubjectFolder) {
-      $("#breadcrumbSubSep").classList.remove("hidden");
-      $("#breadcrumbSub").classList.remove("hidden");
-      $("#breadcrumbSub").textContent = activeSubjectFolder;
+      removeClass("#breadcrumbSubSep", "hidden");
+      removeClass("#breadcrumbSub", "hidden");
+      setText("#breadcrumbSub", activeSubjectFolder);
     } else {
-      $("#breadcrumbSubSep").classList.add("hidden");
-      $("#breadcrumbSub").classList.add("hidden");
+      addClass("#breadcrumbSubSep", "hidden");
+      addClass("#breadcrumbSub", "hidden");
     }
   } else {
-    $("#breadcrumbBar").classList.add("hidden");
+    addClass("#breadcrumbBar", "hidden");
   }
 
-  $("#grid").innerHTML = list.map(p => {
+  setHTML("#grid", list.map(p => {
     const isPhoto = p.fileType === "photo" || /\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "");
     const badgeIcon = isPhoto ? `
       <div class="doc-icon-badge photo">
@@ -281,7 +311,7 @@ function renderCardsGrid() {
         </div>
       </article>
     `;
-  }).join("");
+  }).join(""));
 
   $$("[data-v]").forEach(a => {
     a.onclick = () => fetch(`/api/view?id=${a.dataset.v}`, { method: "POST" }).catch(() => {});
@@ -303,18 +333,18 @@ function openSemester(semesterName) {
   activeSemester = semesterName;
   activeSubjectFolder = null;
   currentViewMode = "folders";
-  $("#viewSemesterTab").classList.remove("active");
-  $("#viewFolderTab").classList.add("active");
-  $("#viewGridTab").classList.remove("active");
+  removeClass("#viewSemesterTab", "active");
+  addClass("#viewFolderTab", "active");
+  removeClass("#viewGridTab", "active");
   render();
 }
 
 function openSubjectFolder(subjectName) {
   activeSubjectFolder = subjectName;
   currentViewMode = "grid";
-  $("#viewSemesterTab").classList.remove("active");
-  $("#viewFolderTab").classList.remove("active");
-  $("#viewGridTab").classList.add("active");
+  removeClass("#viewSemesterTab", "active");
+  removeClass("#viewFolderTab", "active");
+  addClass("#viewGridTab", "active");
   render();
 }
 
@@ -322,39 +352,47 @@ function resetToSemesters() {
   activeSemester = null;
   activeSubjectFolder = null;
   currentViewMode = "semesters";
-  $("#viewSemesterTab").classList.add("active");
-  $("#viewFolderTab").classList.remove("active");
-  $("#viewGridTab").classList.remove("active");
+  addClass("#viewSemesterTab", "active");
+  removeClass("#viewFolderTab", "active");
+  removeClass("#viewGridTab", "active");
   render();
 }
 
-$("#backToSemestersBtn").onclick = resetToSemesters;
+const backToSemestersBtn = $("#backToSemestersBtn");
+if (backToSemestersBtn) backToSemestersBtn.onclick = resetToSemesters;
 
 // View Mode Tabs (Semesters vs Folders vs Grid)
-$("#viewSemesterTab").onclick = resetToSemesters;
+const viewSemesterTab = $("#viewSemesterTab");
+if (viewSemesterTab) viewSemesterTab.onclick = resetToSemesters;
 
-$("#viewFolderTab").onclick = () => {
-  activeSubjectFolder = null;
-  currentViewMode = "folders";
-  $("#viewSemesterTab").classList.remove("active");
-  $("#viewFolderTab").classList.add("active");
-  $("#viewGridTab").classList.remove("active");
-  render();
-};
+const viewFolderTab = $("#viewFolderTab");
+if (viewFolderTab) {
+  viewFolderTab.onclick = () => {
+    activeSubjectFolder = null;
+    currentViewMode = "folders";
+    removeClass("#viewSemesterTab", "active");
+    addClass("#viewFolderTab", "active");
+    removeClass("#viewGridTab", "active");
+    render();
+  };
+}
 
-$("#viewGridTab").onclick = () => {
-  currentViewMode = "grid";
-  $("#viewSemesterTab").classList.remove("active");
-  $("#viewFolderTab").classList.remove("active");
-  $("#viewGridTab").classList.add("active");
-  render();
-};
+const viewGridTab = $("#viewGridTab");
+if (viewGridTab) {
+  viewGridTab.onclick = () => {
+    currentViewMode = "grid";
+    removeClass("#viewSemesterTab", "active");
+    removeClass("#viewFolderTab", "active");
+    addClass("#viewGridTab", "active");
+    render();
+  };
+}
 
 // Category Format Tab Switcher (All / PDF / Photo)
 $$(".type-tab").forEach(tab => {
   tab.onclick = () => {
-    $$(".type-tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
+    $$(".type-tab").forEach(t => removeClass(t, "active"));
+    addClass(tab, "active");
     currentType = tab.dataset.type;
     render();
   };
@@ -364,34 +402,40 @@ $$(".type-tab").forEach(tab => {
 const searchInput = $("#search");
 const clearSearchBtn = $("#clearSearch");
 
-searchInput.oninput = () => {
-  clearSearchBtn.classList.toggle("hidden", !searchInput.value.trim());
-  render();
-};
+if (searchInput) {
+  searchInput.oninput = () => {
+    toggleClass("#clearSearch", "hidden", !searchInput.value.trim());
+    render();
+  };
+}
 
-clearSearchBtn.onclick = () => {
-  searchInput.value = "";
-  clearSearchBtn.classList.add("hidden");
-  render();
-};
+if (clearSearchBtn) {
+  clearSearchBtn.onclick = () => {
+    if (searchInput) searchInput.value = "";
+    addClass("#clearSearch", "hidden");
+    render();
+  };
+}
 
 // 3D Mouse Parallax Effect for Hero Stage
 const heroStage = $("#heroStage");
 if (heroStage) {
   const heroWrapper = $(".hero-3d-wrapper");
-  heroWrapper.addEventListener("mousemove", (e) => {
-    const rect = heroWrapper.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    const rotateX = (-y / rect.height) * 22;
-    const rotateY = (x / rect.width) * 22;
+  if (heroWrapper) {
+    heroWrapper.addEventListener("mousemove", (e) => {
+      const rect = heroWrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      const rotateX = (-y / rect.height) * 22;
+      const rotateY = (x / rect.width) * 22;
 
-    heroStage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-  });
+      heroStage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
 
-  heroWrapper.addEventListener("mouseleave", () => {
-    heroStage.style.transform = `rotateX(0deg) rotateY(0deg)`;
-  });
+    heroWrapper.addEventListener("mouseleave", () => {
+      heroStage.style.transform = `rotateX(0deg) rotateY(0deg)`;
+    });
+  }
 }
 
 function attachCard3DEffect(card) {
@@ -418,7 +462,6 @@ const heroUploadBtn = $("#heroUploadBtn");
 const publicUploadClose = $("#publicUploadClose");
 const uploadSemesterSelect = $("#uploadSemesterSelect");
 const uploadSubjectInput = $("#uploadSubjectInput");
-const pathPreviewText = $("#pathPreviewText");
 
 function slugify(text) {
   return String(text || "general")
@@ -429,182 +472,197 @@ function slugify(text) {
 }
 
 function updatePathPreview() {
-  const sem = uploadSemesterSelect.value || "Semester 1";
-  const slug = slugify(uploadSubjectInput.value) || "general";
-  pathPreviewText.textContent = `Google Drive / ${sem} / ${slug} /`;
+  const sem = uploadSemesterSelect ? uploadSemesterSelect.value || "Semester 1" : "Semester 1";
+  const slug = slugify(uploadSubjectInput ? uploadSubjectInput.value : "general") || "general";
+  setText("#pathPreviewText", `Google Drive / ${sem} / ${slug} /`);
 }
 
-uploadSemesterSelect.onchange = updatePathPreview;
-uploadSubjectInput.oninput = updatePathPreview;
+if (uploadSemesterSelect) uploadSemesterSelect.onchange = updatePathPreview;
+if (uploadSubjectInput) uploadSubjectInput.oninput = updatePathPreview;
 
 function openPublicUploadModal() {
-  publicUploadModal.classList.remove("hidden");
+  removeClass("#publicUploadModal", "hidden");
   updatePathPreview();
 }
 
 function closePublicUploadModal() {
-  publicUploadModal.classList.add("hidden");
-  $("#publicUploadForm").reset();
+  addClass("#publicUploadModal", "hidden");
+  const form = $("#publicUploadForm");
+  if (form) form.reset();
   selectedBase64File = null;
-  $("#filePickerLabel").textContent = "Supports PDF, PNG, JPG, WEBP (Max 10MB)";
-  $("#uploadStatusMsg").textContent = "";
+  setText("#filePickerLabel", "Supports PDF, PNG, JPG, WEBP (Max 10MB)");
+  setText("#uploadStatusMsg", "");
 }
 
-openPublicUploadBtn.onclick = openPublicUploadModal;
+if (openPublicUploadBtn) openPublicUploadBtn.onclick = openPublicUploadModal;
 if (heroUploadBtn) heroUploadBtn.onclick = openPublicUploadModal;
-publicUploadClose.onclick = closePublicUploadModal;
-publicUploadModal.onclick = (e) => { if (e.target === publicUploadModal) closePublicUploadModal(); };
+if (publicUploadClose) publicUploadClose.onclick = closePublicUploadModal;
+if (publicUploadModal) {
+  publicUploadModal.onclick = (e) => { if (e.target === publicUploadModal) closePublicUploadModal(); };
+}
 
 let uploadMode = "file";
 const methodFileTab = $("#methodFileTab");
 const methodLinkTab = $("#methodLinkTab");
-const fileUploadSection = $("#fileUploadSection");
-const linkUploadSection = $("#linkUploadSection");
 
-methodFileTab.onclick = () => {
-  uploadMode = "file";
-  methodFileTab.classList.add("active");
-  methodLinkTab.classList.remove("active");
-  fileUploadSection.classList.remove("hidden");
-  linkUploadSection.classList.add("hidden");
-};
+if (methodFileTab) {
+  methodFileTab.onclick = () => {
+    uploadMode = "file";
+    addClass("#methodFileTab", "active");
+    removeClass("#methodLinkTab", "active");
+    removeClass("#fileUploadSection", "hidden");
+    addClass("#linkUploadSection", "hidden");
+  };
+}
 
-methodLinkTab.onclick = () => {
-  uploadMode = "link";
-  methodLinkTab.classList.add("active");
-  methodFileTab.classList.remove("active");
-  linkUploadSection.classList.remove("hidden");
-  fileUploadSection.classList.add("hidden");
-};
+if (methodLinkTab) {
+  methodLinkTab.onclick = () => {
+    uploadMode = "link";
+    addClass("#methodLinkTab", "active");
+    removeClass("#methodFileTab", "active");
+    removeClass("#linkUploadSection", "hidden");
+    addClass("#fileUploadSection", "hidden");
+  };
+}
 
 let selectedBase64File = null;
 const filePicker = $("#filePicker");
-const filePickerLabel = $("#filePickerLabel");
 
-filePicker.onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 10 * 1024 * 1024) {
-    alert("File size exceeds 10MB limit.");
-    filePicker.value = "";
-    return;
-  }
-  filePickerLabel.textContent = `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
-  
-  const reader = new FileReader();
-  reader.onload = () => {
-    selectedBase64File = {
-      fileData: reader.result,
-      fileName: file.name,
-      mimeType: file.type
-    };
-  };
-  reader.readAsDataURL(file);
-};
-
-$("#publicUploadForm").onsubmit = async (e) => {
-  e.preventDefault();
-  const statusMsg = $("#uploadStatusMsg");
-  const submitBtn = $("#submitUploadBtn");
-  statusMsg.textContent = "";
-  
-  const formData = new FormData(e.target);
-  const title = formData.get("title");
-  const subjectVal = formData.get("subject");
-  const semesterVal = formData.get("semester");
-  const description = formData.get("description");
-  const fileType = formData.get("fileType");
-  const driveUrl = formData.get("driveUrl");
-
-  if (uploadMode === "file" && !selectedBase64File) {
-    statusMsg.style.color = "#ef4444";
-    statusMsg.textContent = "Please select a file to upload.";
-    return;
-  }
-  if (uploadMode === "link" && !driveUrl?.trim()) {
-    statusMsg.style.color = "#ef4444";
-    statusMsg.textContent = "Please enter a valid Google Drive or web share link.";
-    return;
-  }
-
-  submitBtn.disabled = true;
-  statusMsg.style.color = "#a5b4fc";
-  statusMsg.textContent = `Uploading file to ${semesterVal} > ${subjectVal}...`;
-
-  try {
-    const payload = {
-      title,
-      subject: subjectVal,
-      semester: semesterVal,
-      description,
-      fileType,
-      ...(uploadMode === "file" ? selectedBase64File : { driveUrl })
-    };
-
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-
-    statusMsg.style.color = "#34d399";
-    statusMsg.textContent = `Success! Added to ${semesterVal} > ${subjectVal}. Opening folder...`;
+if (filePicker) {
+  filePicker.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size exceeds 10MB limit.");
+      filePicker.value = "";
+      return;
+    }
+    setText("#filePickerLabel", `Selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     
-    setTimeout(async () => {
-      closePublicUploadModal();
-      await load();
-      openSemester(semesterVal);
-      openSubjectFolder(subjectVal);
-    }, 1200);
-  } catch (err) {
-    statusMsg.style.color = "#ef4444";
-    statusMsg.textContent = err.message || "An error occurred during upload.";
-  } finally {
-    submitBtn.disabled = false;
-  }
-};
+    const reader = new FileReader();
+    reader.onload = () => {
+      selectedBase64File = {
+        fileData: reader.result,
+        fileName: file.name,
+        mimeType: file.type
+      };
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+const publicUploadForm = $("#publicUploadForm");
+if (publicUploadForm) {
+  publicUploadForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const submitBtn = $("#submitUploadBtn");
+    setText("#uploadStatusMsg", "");
+    
+    const formData = new FormData(e.target);
+    const title = formData.get("title");
+    const subjectVal = formData.get("subject");
+    const semesterVal = formData.get("semester");
+    const description = formData.get("description");
+    const fileType = formData.get("fileType");
+    const driveUrl = formData.get("driveUrl");
+
+    if (uploadMode === "file" && !selectedBase64File) {
+      const statusMsg = $("#uploadStatusMsg");
+      if (statusMsg) statusMsg.style.color = "#ef4444";
+      setText("#uploadStatusMsg", "Please select a file to upload.");
+      return;
+    }
+    if (uploadMode === "link" && !driveUrl?.trim()) {
+      const statusMsg = $("#uploadStatusMsg");
+      if (statusMsg) statusMsg.style.color = "#ef4444";
+      setText("#uploadStatusMsg", "Please enter a valid Google Drive or web share link.");
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    const statusMsg = $("#uploadStatusMsg");
+    if (statusMsg) statusMsg.style.color = "#a5b4fc";
+    setText("#uploadStatusMsg", `Uploading file to ${semesterVal} > ${subjectVal}...`);
+
+    try {
+      const payload = {
+        title,
+        subject: subjectVal,
+        semester: semesterVal,
+        description,
+        fileType,
+        ...(uploadMode === "file" ? selectedBase64File : { driveUrl })
+      };
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      if (statusMsg) statusMsg.style.color = "#34d399";
+      setText("#uploadStatusMsg", `Success! Added to ${semesterVal} > ${subjectVal}. Opening folder...`);
+      
+      setTimeout(async () => {
+        closePublicUploadModal();
+        await load();
+        openSemester(semesterVal);
+        openSubjectFolder(subjectVal);
+      }, 1200);
+    } catch (err) {
+      if (statusMsg) statusMsg.style.color = "#ef4444";
+      setText("#uploadStatusMsg", err.message || "An error occurred during upload.");
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  };
+}
 
 /* PHOTO LIGHTBOX PREVIEW MODAL LOGIC */
 const photoLightbox = $("#photoLightbox");
 const lightboxClose = $("#lightboxClose");
-const lightboxImg = $("#lightboxImg");
-const lightboxTitle = $("#lightboxTitle");
-const lightboxSub = $("#lightboxSub");
-const lightboxDownloadBtn = $("#lightboxDownloadBtn");
 
 function openPhotoLightbox(item) {
-  photoLightbox.classList.remove("hidden");
-  lightboxImg.src = item.driveUrl;
-  lightboxTitle.textContent = item.title;
-  lightboxSub.textContent = `${item.semester || "Semester 1"} • ${item.subject} • Added ${formatDate(item.createdAt)}`;
-  lightboxDownloadBtn.href = item.downloadUrl;
+  removeClass("#photoLightbox", "hidden");
+  const lightboxImg = $("#lightboxImg");
+  if (lightboxImg) lightboxImg.src = item.driveUrl;
+  setText("#lightboxTitle", item.title);
+  setText("#lightboxSub", `${item.semester || "Semester 1"} • ${item.subject} • Added ${formatDate(item.createdAt)}`);
+  const lightboxDownloadBtn = $("#lightboxDownloadBtn");
+  if (lightboxDownloadBtn) lightboxDownloadBtn.href = item.downloadUrl;
 }
 
-lightboxClose.onclick = () => photoLightbox.classList.add("hidden");
-photoLightbox.onclick = (e) => { if (e.target === photoLightbox) photoLightbox.classList.add("hidden"); };
+if (lightboxClose) lightboxClose.onclick = () => addClass("#photoLightbox", "hidden");
+if (photoLightbox) {
+  photoLightbox.onclick = (e) => { if (e.target === photoLightbox) addClass("#photoLightbox", "hidden"); };
+}
 
 /* ADMIN MODAL & TABBED SUITE */
 const modal = $("#modal");
-$("#adminBtn").onclick = async () => {
-  modal.classList.remove("hidden");
-  const { data: { session } } = await sb.auth.getSession();
-  session ? showAdminPanel() : showLoginForm();
-};
+const adminBtn = $("#adminBtn");
+if (adminBtn) {
+  adminBtn.onclick = async () => {
+    removeClass("#modal", "hidden");
+    const { data: { session } } = await sb.auth.getSession();
+    session ? showAdminPanel() : showLoginForm();
+  };
+}
 
-$("#close").onclick = () => modal.classList.add("hidden");
-modal.onclick = e => { if (e.target === modal) modal.classList.add("hidden"); };
+const closeBtn = $("#close");
+if (closeBtn) closeBtn.onclick = () => addClass("#modal", "hidden");
+if (modal) modal.onclick = e => { if (e.target === modal) addClass("#modal", "hidden"); };
 
 function showLoginForm() {
-  $("#loginView").classList.remove("hidden");
-  $("#adminView").classList.add("hidden");
+  removeClass("#loginView", "hidden");
+  addClass("#adminView", "hidden");
 }
 
 function showAdminPanel() {
-  $("#loginView").classList.add("hidden");
-  $("#adminView").classList.remove("hidden");
+  addClass("#loginView", "hidden");
+  removeClass("#adminView", "hidden");
   switchAdminTab("folders");
   loadAdminItems();
   checkGDriveStatus();
@@ -614,49 +672,52 @@ function showAdminPanel() {
 const adminTabFolders = $("#adminTabFolders");
 const adminTabAdd = $("#adminTabAdd");
 const adminTabGDrive = $("#adminTabGDrive");
-const adminPaneFolders = $("#adminPaneFolders");
-const adminPaneAdd = $("#adminPaneAdd");
-const adminPaneGDrive = $("#adminPaneGDrive");
 
 function switchAdminTab(tabName) {
-  [adminTabFolders, adminTabAdd, adminTabGDrive].forEach(t => t.classList.remove("active"));
-  [adminPaneFolders, adminPaneAdd, adminPaneGDrive].forEach(p => p.classList.add("hidden"));
+  [adminTabFolders, adminTabAdd, adminTabGDrive].forEach(t => t && removeClass(t, "active"));
+  ["#adminPaneFolders", "#adminPaneAdd", "#adminPaneGDrive"].forEach(p => addClass(p, "hidden"));
 
   if (tabName === "folders") {
-    adminTabFolders.classList.add("active");
-    adminPaneFolders.classList.remove("hidden");
+    addClass(adminTabFolders, "active");
+    removeClass("#adminPaneFolders", "hidden");
   } else if (tabName === "add") {
-    adminTabAdd.classList.add("active");
-    adminPaneAdd.classList.remove("hidden");
+    addClass(adminTabAdd, "active");
+    removeClass("#adminPaneAdd", "hidden");
   } else if (tabName === "gdrive") {
-    adminTabGDrive.classList.add("active");
-    adminPaneGDrive.classList.remove("hidden");
+    addClass(adminTabGDrive, "active");
+    removeClass("#adminPaneGDrive", "hidden");
   }
 }
 
-adminTabFolders.onclick = () => switchAdminTab("folders");
-adminTabAdd.onclick = () => switchAdminTab("add");
-adminTabGDrive.onclick = () => switchAdminTab("gdrive");
+if (adminTabFolders) adminTabFolders.onclick = () => switchAdminTab("folders");
+if (adminTabAdd) adminTabAdd.onclick = () => switchAdminTab("add");
+if (adminTabGDrive) adminTabGDrive.onclick = () => switchAdminTab("gdrive");
 
-$("#login").onsubmit = async e => {
-  e.preventDefault();
-  $("#loginErr").textContent = "";
-  const formData = new FormData(e.target);
-  const { error } = await sb.auth.signInWithPassword({
-    email: formData.get("email"),
-    password: formData.get("password")
-  });
-  if (error) {
-    $("#loginErr").textContent = error.message;
-  } else {
-    showAdminPanel();
-  }
-};
+const loginForm = $("#login");
+if (loginForm) {
+  loginForm.onsubmit = async e => {
+    e.preventDefault();
+    setText("#loginErr", "");
+    const formData = new FormData(e.target);
+    const { error } = await sb.auth.signInWithPassword({
+      email: formData.get("email"),
+      password: formData.get("password")
+    });
+    if (error) {
+      setText("#loginErr", error.message);
+    } else {
+      showAdminPanel();
+    }
+  };
+}
 
-$("#logout").onclick = async () => {
-  await sb.auth.signOut();
-  showLoginForm();
-};
+const logoutBtn = $("#logout");
+if (logoutBtn) {
+  logoutBtn.onclick = async () => {
+    await sb.auth.signOut();
+    showLoginForm();
+  };
+}
 
 async function getAuthToken() {
   const { data } = await sb.auth.getSession();
@@ -683,7 +744,7 @@ async function adminApi(method, body, id = "") {
 async function loadAdminItems() {
   try {
     const list = await adminApi("GET");
-    $("#adminCount").textContent = `${list.length} total files`;
+    setText("#adminCount", `${list.length} total files`);
 
     // Group list by Semester -> Subject Folder
     const semGroups = {};
@@ -696,7 +757,7 @@ async function loadAdminItems() {
 
     const sortedSemesters = ALL_SEMESTERS.filter(s => semGroups[s]);
 
-    $("#adminFolderList").innerHTML = sortedSemesters.map(sem => `
+    setHTML("#adminFolderList", sortedSemesters.map(sem => `
       <div class="admin-sem-group">
         <div class="admin-sem-head">
           <strong>🎓 ${esc(sem)} Directory</strong>
@@ -725,7 +786,7 @@ async function loadAdminItems() {
           </div>
         `).join("")}
       </div>
-    `).join("");
+    `).join(""));
 
     $$("#adminFolderList [data-e]").forEach(btn => {
       btn.onclick = () => {
@@ -744,7 +805,7 @@ async function loadAdminItems() {
       };
     });
   } catch (err) {
-    $("#adminFolderList").innerHTML = `<p style="color:#ef4444">${esc(err.message)}</p>`;
+    setHTML("#adminFolderList", `<p style="color:#ef4444">${esc(err.message)}</p>`);
   }
 }
 
@@ -753,71 +814,82 @@ async function checkGDriveStatus() {
     const res = await fetch("/api/gdrive");
     const data = await res.json();
     const badge = $("#gdriveStatusBadge");
-    const statusText = $("#gdriveStatusText");
 
     if (data.configured && data.status === "connected") {
-      badge.style.background = "rgba(16, 185, 129, 0.12)";
-      badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
-      badge.style.color = "#34d399";
-      statusText.textContent = `Google Drive Connected (Service Account: ${data.clientEmail})`;
+      if (badge) {
+        badge.style.background = "rgba(16, 185, 129, 0.12)";
+        badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
+        badge.style.color = "#34d399";
+      }
+      setText("#gdriveStatusText", `Google Drive Connected (Service Account: ${data.clientEmail})`);
     } else {
-      badge.style.background = "rgba(245, 158, 11, 0.12)";
-      badge.style.borderColor = "rgba(245, 158, 11, 0.3)";
-      badge.style.color = "#fbbf24";
-      statusText.textContent = "Google Drive API Keys Not Configured in .env (Using Supabase Storage Fallback)";
+      if (badge) {
+        badge.style.background = "rgba(245, 158, 11, 0.12)";
+        badge.style.borderColor = "rgba(245, 158, 11, 0.3)";
+        badge.style.color = "#fbbf24";
+      }
+      setText("#gdriveStatusText", "Google Drive API Keys Not Configured in .env (Using Supabase Storage Fallback)");
     }
   } catch {
-    $("#gdriveStatusText").textContent = "Using Cloud Storage Fallback";
+    setText("#gdriveStatusText", "Using Cloud Storage Fallback");
   }
 }
 
 function resetAdminForm() {
-  $("#pdfForm").reset();
-  $("#pdfForm [name=id]").value = "";
-  $("#save").textContent = "Save Resource";
-  $("#cancel").classList.add("hidden");
-  $("#formMsg").textContent = "";
+  const form = $("#pdfForm");
+  if (form) {
+    form.reset();
+    if (form.elements["id"]) form.elements["id"].value = "";
+  }
+  setText("#save", "Save Resource");
+  addClass("#cancel", "hidden");
+  setText("#formMsg", "");
 }
 
 function editAdminItem(p) {
   const f = $("#pdfForm");
-  f.id.value = p.id;
-  f.title.value = p.title;
-  f.subject.value = p.subject;
-  f.semester.value = p.semester || "Semester 1";
-  f.fileType.value = p.fileType || "pdf";
-  f.description.value = p.description || "";
-  f.driveUrl.value = p.driveUrl || "";
-  $("#save").textContent = "Save Changes";
-  $("#cancel").classList.remove("hidden");
+  if (!f) return;
+  if (f.elements["id"]) f.elements["id"].value = p.id;
+  if (f.elements["title"]) f.elements["title"].value = p.title;
+  if (f.elements["subject"]) f.elements["subject"].value = p.subject;
+  if (f.elements["semester"]) f.elements["semester"].value = p.semester || "Semester 1";
+  if (f.elements["fileType"]) f.elements["fileType"].value = p.fileType || "pdf";
+  if (f.elements["description"]) f.elements["description"].value = p.description || "";
+  if (f.elements["driveUrl"]) f.elements["driveUrl"].value = p.driveUrl || "";
+  setText("#save", "Save Changes");
+  removeClass("#cancel", "hidden");
   f.scrollIntoView({ behavior: "smooth" });
 }
 
-$("#cancel").onclick = resetAdminForm;
+const cancelBtn = $("#cancel");
+if (cancelBtn) cancelBtn.onclick = resetAdminForm;
 
-$("#pdfForm").onsubmit = async e => {
-  e.preventDefault();
-  $("#formMsg").textContent = "";
-  const f = new FormData(e.target);
-  const id = f.get("id");
-  const body = {
-    title: f.get("title"),
-    subject: f.get("subject"),
-    semester: f.get("semester"),
-    fileType: f.get("fileType"),
-    description: f.get("description"),
-    driveUrl: f.get("driveUrl")
+const pdfForm = $("#pdfForm");
+if (pdfForm) {
+  pdfForm.onsubmit = async e => {
+    e.preventDefault();
+    setText("#formMsg", "");
+    const f = new FormData(e.target);
+    const id = f.get("id");
+    const body = {
+      title: f.get("title"),
+      subject: f.get("subject"),
+      semester: f.get("semester"),
+      fileType: f.get("fileType"),
+      description: f.get("description"),
+      driveUrl: f.get("driveUrl")
+    };
+    try {
+      await adminApi(id ? "PUT" : "POST", body, id);
+      setText("#formMsg", id ? "Updated successfully." : "Added resource successfully.");
+      resetAdminForm();
+      await loadAdminItems();
+      await load();
+    } catch (err) {
+      setText("#formMsg", err.message);
+    }
   };
-  try {
-    await adminApi(id ? "PUT" : "POST", body, id);
-    $("#formMsg").textContent = id ? "Updated successfully." : "Added resource successfully.";
-    resetAdminForm();
-    await loadAdminItems();
-    await load();
-  } catch (err) {
-    $("#formMsg").textContent = err.message;
-  }
-};
+}
 
 // Initial setup
 load();
