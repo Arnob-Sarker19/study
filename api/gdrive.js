@@ -10,15 +10,47 @@ function base64UrlEncode(str) {
 
 export function parseFolderId(rawId) {
   if (!rawId) return null;
-  const str = String(rawId).trim();
-  const folderMatch = str.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  let str = String(rawId).trim();
+  if (str.includes("?")) {
+    str = str.split("?")[0];
+  }
+  str = str.replace(/\/+$/, "");
+  const folderMatch = str.match(/\/(?:folders|d)\/([a-zA-Z0-9_-]+)/);
   if (folderMatch) return folderMatch[1];
   const queryMatch = str.match(/id=([a-zA-Z0-9_-]+)/);
   if (queryMatch) return queryMatch[1];
-  return str.replace(/[^a-zA-Z0-9_-]/g, "");
+  return str.split("/").pop().trim();
 }
 
 export async function getGoogleDriveAccessToken() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+  // 1. Preferred Method: User Personal Google Account OAuth Refresh Token (Uses personal 15GB quota)
+  if (clientId && clientSecret && refreshToken) {
+    try {
+      const res = await fetch("https://oauth2.googleapis.com/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          client_id: clientId,
+          client_secret: clientSecret,
+          refresh_token: refreshToken,
+          grant_type: "refresh_token"
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.access_token) {
+        return data.access_token;
+      }
+      console.warn("User OAuth Refresh Token failed, falling back to Service Account:", data);
+    } catch (err) {
+      console.warn("User OAuth Refresh Token error:", err.message);
+    }
+  }
+
+  // 2. Fallback Method: Service Account JWT Assertion
   const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
   let privateKey = process.env.GOOGLE_PRIVATE_KEY;
 
@@ -111,7 +143,7 @@ export async function getOrCreateDriveSubjectFolder(accessToken, rawRootFolderId
 export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fileName, mimeType, buffer }) {
   const cleanParentId = parseFolderId(parentFolderId);
   if (!cleanParentId) {
-    throw new Error("Google Drive parent folder ID is required for Service Account upload.");
+    throw new Error("Google Drive parent folder ID is required for upload.");
   }
 
   const metadata = {
@@ -119,17 +151,15 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
     parents: [cleanParentId]
   };
 
-  const boundary = "-------314159265358979323846";
-  const delimiter = `\r\n--${boundary}\r\n`;
-  const closeDelimiter = `\r\n--${boundary}--`;
+  const boundary = "study_drive_upload_boundary_314159";
 
-  const bodyBuffer = Buffer.concat([
-    Buffer.from(
-      `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}${delimiter}Content-Type: ${mimeType}\r\nContent-Transfer-Encoding: base64\r\n\r\n`
-    ),
-    Buffer.from(buffer.toString("base64")),
-    Buffer.from(closeDelimiter)
-  ]);
+  const headBuffer = Buffer.from(
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: ${mimeType}\r\n\r\n`
+  );
+
+  const tailBuffer = Buffer.from(`\r\n--${boundary}--`);
+
+  const bodyBuffer = Buffer.concat([headBuffer, buffer, tailBuffer]);
 
   const uploadRes = await fetch(
     "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink,webContentLink",
@@ -137,7 +167,8 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        "Content-Type": `multipart/related; boundary=${boundary}`
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+        "Content-Length": String(bodyBuffer.length)
       },
       body: bodyBuffer
     }
@@ -167,10 +198,14 @@ export async function uploadFileToGoogleDrive({ accessToken, parentFolderId, fil
 
 export default async function handler(req, res) {
   try {
-    const isConfigured = !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY && process.env.GOOGLE_DRIVE_FOLDER_ID);
+    const isUserOAuth = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
+    const isServiceAccount = !!(process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+    const isConfigured = (isUserOAuth || isServiceAccount) && !!process.env.GOOGLE_DRIVE_FOLDER_ID;
     const rootFolderId = parseFolderId(process.env.GOOGLE_DRIVE_FOLDER_ID);
 
     let testStatus = "not_configured";
+    let authMode = isUserOAuth ? "user_oauth" : (isServiceAccount ? "service_account" : "none");
+
     if (isConfigured) {
       try {
         const token = await getGoogleDriveAccessToken();
@@ -182,6 +217,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       configured: isConfigured,
+      mode: authMode,
       rootFolderId: rootFolderId,
       status: testStatus,
       clientEmail: process.env.GOOGLE_CLIENT_EMAIL ? `${process.env.GOOGLE_CLIENT_EMAIL.substring(0, 8)}...` : null

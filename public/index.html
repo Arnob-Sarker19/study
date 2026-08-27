@@ -455,26 +455,38 @@
               <strong id="gdriveStatusText">Checking Google Drive Connection...</strong>
             </div>
 
-            <h3>Google Drive Semester Directory Sync</h3>
+            <h3>Google Drive Personal Gmail & Semester Sync</h3>
             <p class="gdrive-guide-text">
-              When configured, uploaded files automatically create the following directory tree inside your Google Drive:  
+              Uploaded files automatically create semester and subject folders inside your personal Google Drive:  
               <code>Google Drive / [Semester X] / [Subject Folder] / [File]</code>
             </p>
 
+            <div style="margin: 20px 0; padding: 18px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 14px;">
+              <h4 style="color: #a5b4fc; margin-bottom: 8px;">🔑 Option 3: Personal @gmail.com OAuth 2.0 (Recommended - Uses your 15 GB quota)</h4>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
+                Connect your personal Google account once to allow saving PDFs & Photos directly into your personal Google Drive without any Service Account quota limits.
+              </p>
+              <a href="/api/auth/google" target="_blank" class="btn-primary sm" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">
+                <span>Connect Personal Google Drive Account</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </div>
+
             <div class="code-box">
               <code>
-                GOOGLE_CLIENT_EMAIL="your-service-account@project-id.iam.gserviceaccount.com"<br>
-                GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"<br>
+                GOOGLE_CLIENT_ID="your-oauth-client-id.apps.googleusercontent.com"<br>
+                GOOGLE_CLIENT_SECRET="GOCSPX-your-client-secret"<br>
+                GOOGLE_REFRESH_TOKEN="1//04your-generated-refresh-token"<br>
                 GOOGLE_DRIVE_FOLDER_ID="1A2b3C4d5E6f7G8h9I0j"
               </code>
             </div>
 
             <div class="gdrive-instructions">
-              <h4>Quick 3-Step Setup Guide:</h4>
+              <h4>Personal Gmail 3-Step Setup Guide:</h4>
               <ol>
-                <li>Create a folder in your Google Drive (e.g. <code>Study Library Root</code>) and copy its Folder ID from the URL.</li>
-                <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, enable <strong>Google Drive API</strong>, and create a <strong>Service Account</strong> key.</li>
-                <li>Share your Google Drive root folder with the Service Account email address as an <strong>Editor</strong>.</li>
+                <li>In <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, create an <strong>OAuth 2.0 Web Client ID</strong> and set Redirect URI to <code>https://your-site.vercel.app/api/auth/google</code>.</li>
+                <li>Add <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> to Vercel Environment Variables.</li>
+                <li>Click the <strong>Connect Personal Google Drive Account</strong> button above to get your <code>GOOGLE_REFRESH_TOKEN</code>!</li>
               </ol>
             </div>
           </div>

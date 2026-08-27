@@ -821,14 +821,18 @@ async function checkGDriveStatus() {
         badge.style.borderColor = "rgba(16, 185, 129, 0.3)";
         badge.style.color = "#34d399";
       }
-      setText("#gdriveStatusText", `Google Drive Connected (Service Account: ${data.clientEmail})`);
+      if (data.mode === "user_oauth") {
+        setText("#gdriveStatusText", "Google Drive Connected (Personal @gmail.com Account - 15 GB Quota Enabled)");
+      } else {
+        setText("#gdriveStatusText", `Google Drive Connected (Service Account: ${data.clientEmail})`);
+      }
     } else {
       if (badge) {
         badge.style.background = "rgba(245, 158, 11, 0.12)";
         badge.style.borderColor = "rgba(245, 158, 11, 0.3)";
         badge.style.color = "#fbbf24";
       }
-      setText("#gdriveStatusText", "Google Drive API Keys Not Configured in .env (Using Supabase Storage Fallback)");
+      setText("#gdriveStatusText", "Google Drive API Keys Not Configured (Using Supabase Storage Fallback)");
     }
   } catch {
     setText("#gdriveStatusText", "Using Cloud Storage Fallback");
