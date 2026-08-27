@@ -1298,65 +1298,82 @@ main {
 .admin-folder-tree {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  max-height: 380px;
+  gap: 16px;
+  max-height: 60vh;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 8px;
 }
 
 .admin-sem-group {
-  background: rgba(5, 11, 20, 0.6);
-  border: 1px solid var(--border-dim);
-  border-radius: 14px;
-  overflow: hidden;
+  background: rgba(10, 19, 36, 0.9);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px;
+  overflow: visible;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .admin-sem-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(99, 102, 241, 0.1);
-  border-bottom: 1px solid var(--border-dim);
+  padding: 14px 18px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(139, 92, 246, 0.12));
+  border-bottom: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px 16px 0 0;
 }
 
 .admin-sem-head strong {
-  font-size: 14px;
+  font-family: var(--font-heading);
+  font-size: 15px;
   color: #a5b4fc;
 }
 
 .admin-folder-group {
-  margin: 10px 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  overflow: hidden;
+  margin: 12px 14px 16px;
+  background: rgba(5, 11, 20, 0.6);
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  overflow: visible;
 }
 
 .admin-folder-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-dim);
+  cursor: pointer;
+  border-radius: 14px 14px 0 0;
+  transition: background 0.2s;
+}
+
+.admin-folder-head:hover {
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .admin-folder-head strong {
-  font-size: 12px;
+  font-family: var(--font-heading);
+  font-size: 13px;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .admin-folder-head span {
-  font-size: 10px;
-  color: var(--text-sub);
+  font-size: 11px;
+  color: #c084fc;
+  font-weight: 700;
 }
 
 .admin-folder-items {
-  padding: 10px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  background: rgba(2, 7, 16, 0.4);
+  border-radius: 0 0 14px 14px;
 }
 
 .gdrive-settings-card {

@@ -763,30 +763,48 @@ async function loadAdminItems() {
           <strong>🎓 ${esc(sem)} Directory</strong>
           <span>${Object.values(semGroups[sem]).reduce((acc, curr) => acc + curr.length, 0)} files</span>
         </div>
-        ${Object.keys(semGroups[sem]).sort().map(subj => `
-          <div class="admin-folder-group">
-            <div class="admin-folder-head">
-              <strong>📁 ${esc(subj)} Folder</strong>
-              <span>${semGroups[sem][subj].length} files</span>
+        ${Object.keys(semGroups[sem]).sort().map(subj => {
+          const files = semGroups[sem][subj];
+          return `
+            <div class="admin-folder-group">
+              <div class="admin-folder-head" data-toggle-folder="${esc(sem)}-${esc(subj)}">
+                <strong>📁 ${esc(subj)} Folder</strong>
+                <span>${files.length} ${files.length === 1 ? "file" : "files"} (Click to Toggle) ▼</span>
+              </div>
+              <div class="admin-folder-items">
+                ${files.map(p => {
+                  const isPhoto = p.fileType === "photo" || /\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "");
+                  const fileIcon = isPhoto ? "📷" : "📄";
+                  const itemType = (p.fileType || "pdf").toUpperCase();
+                  return `
+                    <div class="admin-item">
+                      <div class="admin-item-info">
+                        <strong>${fileIcon} [${itemType}] ${esc(p.title)}</strong>
+                        <small>${p.views || 0} views • Added ${formatDate(p.createdAt)}</small>
+                      </div>
+                      <div class="admin-item-actions">
+                        <a href="${esc(p.driveUrl)}" target="_blank" rel="noopener" class="btn-ghost btn-sm" style="color: #22d3ee; border-color: rgba(6, 182, 212, 0.3);">View File</a>
+                        <button class="btn-ghost btn-sm" data-e="${p.id}">Edit</button>
+                        <button class="btn-ghost danger btn-sm" data-d="${p.id}">Delete</button>
+                      </div>
+                    </div>
+                  `;
+                }).join("")}
+              </div>
             </div>
-            <div class="admin-folder-items">
-              ${semGroups[sem][subj].map(p => `
-                <div class="admin-item">
-                  <div class="admin-item-info">
-                    <strong>[${(p.fileType || "pdf").toUpperCase()}] ${esc(p.title)}</strong>
-                    <small>${p.views || 0} views • Added ${formatDate(p.createdAt)}</small>
-                  </div>
-                  <div class="admin-item-actions">
-                    <button class="btn-ghost btn-sm" data-e="${p.id}">Edit</button>
-                    <button class="btn-ghost danger btn-sm" data-d="${p.id}">Delete</button>
-                  </div>
-                </div>
-              `).join("")}
-            </div>
-          </div>
-        `).join("")}
+          `;
+        }).join("")}
       </div>
     `).join(""));
+
+    $$("[data-toggle-folder]").forEach(head => {
+      head.onclick = () => {
+        const next = head.nextElementSibling;
+        if (next) {
+          next.classList.toggle("hidden");
+        }
+      };
+    });
 
     $$("#adminFolderList [data-e]").forEach(btn => {
       btn.onclick = () => {
