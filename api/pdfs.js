@@ -20,22 +20,18 @@ function driveId(url) {
   return null;
 }
 
-function normalize(url) {
-  try {
-    const u = new URL(url);
-    if (!u.hostname.includes("drive.google.com")) return null;
-    const id = driveId(url);
-    return id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : null;
-  } catch { return null; }
-}
-
 function enrich(p) {
   const id = driveId(p.drive_url);
+  const isImage = p.file_type === "photo" || /\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.drive_url || "");
+  const detectedType = p.file_type || (isImage ? "photo" : "pdf");
+
   return {
     id: p.id,
     title: p.title,
     subject: p.subject,
+    semester: p.semester || "Semester 1",
     description: p.description || "",
+    fileType: detectedType,
     driveUrl: p.drive_url,
     previewUrl: id ? `https://drive.google.com/file/d/${id}/preview` : p.drive_url,
     downloadUrl: id ? `https://drive.google.com/uc?export=download&id=${id}` : p.drive_url,
@@ -55,14 +51,16 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      const { q = "", subject = "" } = req.query || {};
+      const { q = "", subject = "", semester = "", type = "all" } = req.query || {};
       let query = supabase.from("pdfs").select("*").order("created_at", { ascending: false });
 
       if (q) {
         const term = String(q).replace(/[%_,]/g, "");
-        query = query.or(`title.ilike.%${term}%,subject.ilike.%${term}%,description.ilike.%${term}%`);
+        query = query.or(`title.ilike.%${term}%,subject.ilike.%${term}%,semester.ilike.%${term}%,description.ilike.%${term}%`);
       }
       if (subject && subject !== "all") query = query.eq("subject", subject);
+      if (semester && semester !== "all") query = query.eq("semester", semester);
+      if (type && type !== "all") query = query.eq("file_type", type);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -71,7 +69,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Method not allowed" });
   } catch (e) {
-    console.error(e);
+    console.error("PDFs API Error:", e);
     return res.status(500).json({ error: "Server error" });
   }
 }

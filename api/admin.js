@@ -6,11 +6,6 @@ const supabase = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
-const anon = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
 function driveId(url) {
   const patterns = [
     /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
@@ -27,20 +22,29 @@ function driveId(url) {
 function normalize(url) {
   try {
     const u = new URL(url);
-    if (!u.hostname.includes("drive.google.com")) return null;
+    if (!u.hostname.includes("drive.google.com")) return url;
     const id = driveId(url);
-    return id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : null;
-  } catch { return null; }
+    return id ? `https://drive.google.com/file/d/${id}/view?usp=sharing` : url;
+  } catch { return url; }
 }
 
 function enrich(p) {
   const id = driveId(p.drive_url);
+  const isImage = p.file_type === "photo" || /\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.drive_url || "");
+  const detectedType = p.file_type || (isImage ? "photo" : "pdf");
+
   return {
-    id: p.id, title: p.title, subject: p.subject, description: p.description || "",
+    id: p.id,
+    title: p.title,
+    subject: p.subject,
+    semester: p.semester || "Semester 1",
+    description: p.description || "",
+    fileType: detectedType,
     driveUrl: p.drive_url,
     previewUrl: id ? `https://drive.google.com/file/d/${id}/preview` : p.drive_url,
     downloadUrl: id ? `https://drive.google.com/uc?export=download&id=${id}` : p.drive_url,
-    createdAt: p.created_at, views: p.views || 0
+    createdAt: p.created_at,
+    views: p.views || 0
   };
 }
 
@@ -57,6 +61,7 @@ async function requireAuth(req) {
 export default async function handler(req, res) {
   try {
     const user = await requireAuth(req);
+
     if (req.method === "GET") {
       const { data, error } = await supabase.from("pdfs").select("*").order("created_at", { ascending: false });
       if (error) throw error;
@@ -64,26 +69,36 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      const { title, subject, description, driveUrl } = req.body || {};
+      const { title, subject, semester, description, driveUrl, fileType } = req.body || {};
       const normalized = normalize(driveUrl);
       if (!title?.trim() || !subject?.trim() || !normalized) {
-        return res.status(400).json({ error: "Title, subject and valid Google Drive URL are required." });
+        return res.status(400).json({ error: "Title, subject and valid URL are required." });
       }
       const { data, error } = await supabase.from("pdfs").insert({
-        title: title.trim(), subject: subject.trim(), description: String(description || "").trim(), drive_url: normalized
+        title: title.trim(),
+        subject: subject.trim(),
+        semester: (semester || "Semester 1").trim(),
+        description: String(description || "").trim(),
+        drive_url: normalized,
+        file_type: fileType === "photo" ? "photo" : "pdf"
       }).select().single();
       if (error) throw error;
       return res.status(201).json(enrich(data));
     }
 
     if (req.method === "PUT") {
-      const { id, title, subject, description, driveUrl } = req.body || {};
+      const { id, title, subject, semester, description, driveUrl, fileType } = req.body || {};
       const normalized = normalize(driveUrl);
       if (!id || !title?.trim() || !subject?.trim() || !normalized) {
-        return res.status(400).json({ error: "ID, title, subject and valid Drive URL are required." });
+        return res.status(400).json({ error: "ID, title, subject and URL are required." });
       }
       const { data, error } = await supabase.from("pdfs").update({
-        title: title.trim(), subject: subject.trim(), description: String(description || "").trim(), drive_url: normalized
+        title: title.trim(),
+        subject: subject.trim(),
+        semester: (semester || "Semester 1").trim(),
+        description: String(description || "").trim(),
+        drive_url: normalized,
+        file_type: fileType === "photo" ? "photo" : "pdf"
       }).eq("id", id).select().single();
       if (error) throw error;
       return res.status(200).json(enrich(data));
@@ -100,7 +115,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   } catch (e) {
     if (e.message === "Unauthorized") return res.status(401).json({ error: "Unauthorized" });
-    console.error(e);
+    console.error("Admin API Error:", e);
     return res.status(500).json({ error: "Server error" });
   }
 }

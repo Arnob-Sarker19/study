@@ -3,13 +3,21 @@ create table if not exists public.pdfs (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   subject text not null,
+  semester text not null default 'Semester 1',
   description text default '',
   drive_url text not null,
+  file_type text not null default 'pdf',
   created_at timestamptz not null default now(),
   views integer not null default 0
 );
 
+-- Ensure semester and file_type columns exist if table already created
+alter table public.pdfs add column if not exists semester text not null default 'Semester 1';
+alter table public.pdfs add column if not exists file_type text not null default 'pdf';
+
 create index if not exists pdfs_subject_idx on public.pdfs(subject);
+create index if not exists pdfs_semester_idx on public.pdfs(semester);
+create index if not exists pdfs_file_type_idx on public.pdfs(file_type);
 create index if not exists pdfs_created_at_idx on public.pdfs(created_at desc);
 
 alter table public.pdfs enable row level security;
@@ -21,13 +29,14 @@ on public.pdfs for select
 to anon, authenticated
 using (true);
 
--- Only authenticated Supabase users can manage PDFs.
-drop policy if exists "Authenticated can insert PDFs" on public.pdfs;
-create policy "Authenticated can insert PDFs"
+-- Public users can upload/insert resources.
+drop policy if exists "Public can insert PDFs" on public.pdfs;
+create policy "Public can insert PDFs"
 on public.pdfs for insert
-to authenticated
+to anon, authenticated
 with check (true);
 
+-- Only authenticated Supabase users can update PDFs.
 drop policy if exists "Authenticated can update PDFs" on public.pdfs;
 create policy "Authenticated can update PDFs"
 on public.pdfs for update
@@ -35,6 +44,7 @@ to authenticated
 using (true)
 with check (true);
 
+-- Only authenticated Supabase users can delete PDFs.
 drop policy if exists "Authenticated can delete PDFs" on public.pdfs;
 create policy "Authenticated can delete PDFs"
 on public.pdfs for delete

@@ -1,30 +1,494 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#07101f"><title>Study Drive Library</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050b14">
+  <title>Study Drive | Semester-wise PDF & Photo Resource Library</title>
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="bg-glow g1"></div><div class="bg-glow g2"></div>
-<header><a class="brand" href="/"><b class="logo">S</b><span><strong>Study Drive</strong><small>PDF Library</small></span></a><nav><a href="#library">Library</a><button id="adminBtn" class="ghost">Admin</button></nav></header>
-<main>
-<section class="hero"><div><span class="eyebrow">STUDY GROUP RESOURCE HUB</span><h1>Everything you need to study,<br><em>in one place.</em></h1><p>Notes, books and study PDFs organized in one clean library. Files remain on Google Drive, so your website stays lightweight.</p><div class="actions"><a href="#library" class="primary">Explore Library</a><a href="#library" class="secondary">Latest PDFs</a></div></div><div class="mock"><div class="mockbar">● ● ●</div><div class="mocksearch">⌕ &nbsp; Search study materials...</div><div class="mockitem"><b>PDF</b><span>Computer Networks Notes<small>Networking</small></span></div><div class="mockitem"><b>PDF</b><span>Database Management System<small>Database</small></span></div><div class="mockitem"><b>PDF</b><span>Programming Fundamentals<small>Programming</small></span></div></div></section>
-<section id="library" class="library"><div class="heading"><div><span class="eyebrow">RESOURCE LIBRARY</span><h2>Find your study material</h2></div><span class="count"><b id="count">0</b> PDFs</span></div>
-<div class="toolbar"><div class="search">⌕<input id="search" placeholder="Search PDF, subject or keyword..."></div><div id="chips"></div></div>
-<div id="loading" class="state">Loading library...</div><div id="empty" class="state hidden"><h3>No PDFs found</h3><p>Try a different keyword or category.</p></div><div id="grid" class="grid"></div></section>
-</main>
-<footer><b>Study Drive Library</b><span>Files are hosted on Google Drive.</span></footer>
+  <!-- Ambient background lighting canvas & mesh -->
+  <div class="mesh-bg">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+    <div class="glow g3"></div>
+    <div class="grid-overlay"></div>
+  </div>
 
-<div id="modal" class="modal hidden"><div class="modalcard">
-<button class="close" id="close">×</button>
-<div id="loginView"><span class="eyebrow">ADMIN ACCESS</span><h2>Manage library</h2><p>Sign in with your Supabase admin account.</p><form id="login"><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required></label><button class="primary full">Sign in</button><div id="loginErr" class="err"></div></form></div>
-<div id="adminView" class="hidden"><div class="adminhead"><div><span class="eyebrow">ADMIN PANEL</span><h2>Manage PDFs</h2></div><button id="logout" class="ghost">Log out</button></div>
-<form id="pdfForm"><input type="hidden" name="id"><label>PDF title<input name="title" required placeholder="Computer Networks Chapter 1"></label><label>Subject<input name="subject" required placeholder="Networking"></label><label>Description<textarea name="description" rows="2"></textarea></label><label>Google Drive link<input name="driveUrl" required placeholder="https://drive.google.com/file/d/..."></label><div class="actions"><button class="primary" id="save">Add PDF</button><button type="button" class="secondary hidden" id="cancel">Cancel</button></div><div id="formMsg"></div></form>
-<div class="listhead"><h3>Current PDFs</h3><span id="adminCount"></span></div><div id="adminList"></div>
-</div></div></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/app.js"></script>
-</body></html>
+  <header>
+    <a class="brand" href="/">
+      <div class="logo-box">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
+          <path d="M6 9h10"></path>
+          <path d="M6 13h7"></path>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <strong>Study Drive</strong>
+        <small>Semester & Subject Library</small>
+      </div>
+    </a>
+    <nav>
+      <a href="#library" class="nav-link">Semesters</a>
+      <button id="openPublicUploadBtn" class="btn-primary sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        Upload File
+      </button>
+      <button id="adminBtn" class="btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Admin Panel
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HERO SECTION WITH 3D ANIMATED STAGE -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="badge-pill">
+          <span class="badge-dot"></span>
+          <span>SEMESTER-WISE ACADEMIC ARCHIVE</span>
+        </div>
+        <h1>Semester Folders.<br><span class="gradient-text">PDFs & Photo Notes.</span></h1>
+        <p class="hero-desc">
+          Browse study materials by Semester 1 through Semester 8. 
+          Each semester features dedicated subject folders automatically synced with Google Drive.
+        </p>
+        <div class="hero-actions">
+          <button id="heroUploadBtn" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Upload File to Semester</span>
+          </button>
+          <a href="#library" class="btn-secondary">Explore Semesters</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <b>8</b>
+            <span>Semesters</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <b id="subjectFolderCount">0</b>
+            <span>Subjects</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <b id="statCount">0+</b>
+            <span>Total Files</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3D INTERACTIVE HERO STAGE -->
+      <div class="hero-3d-wrapper">
+        <div class="hero-3d-stage" id="heroStage">
+          <!-- Main 3D Floating Window -->
+          <div class="card-3d main-window">
+            <div class="window-bar">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="window-title">Google Drive / Semester 3 / Computer Networks /</span>
+            </div>
+            <div class="window-search-preview">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+              <span>Auto directory routing: [Semester] / [Subject] / [File]</span>
+            </div>
+            <div class="preview-cards-list">
+              <div class="pcard">
+                <div class="pcard-icon">🎓</div>
+                <div class="pcard-info">
+                  <strong>Semester 1/</strong>
+                  <small>Basic Programming, Math I, Physics</small>
+                </div>
+                <span class="pcard-badge">Semester</span>
+              </div>
+              <div class="pcard">
+                <div class="pcard-icon green">🎓</div>
+                <div class="pcard-info">
+                  <strong>Semester 3/</strong>
+                  <small>Computer Networks, Data Structures</small>
+                </div>
+                <span class="pcard-badge blue">Semester</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Accent 3D Element 1 -->
+          <div class="floating-badge badge-top-right">
+            <div class="f-icon">🎓</div>
+            <div>
+              <strong>Semesters 1 - 8</strong>
+              <small>Dedicated Folders</small>
+            </div>
+          </div>
+
+          <!-- Floating Accent 3D Element 2 -->
+          <div class="floating-badge badge-bottom-left">
+            <div class="f-icon">☁️</div>
+            <div>
+              <strong>Google Drive Sync</strong>
+              <small>Automated Directory</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIBRARY SECTION -->
+    <section id="library" class="library">
+      <div class="library-header">
+        <div>
+          <div class="badge-pill sm">SEMESTER FILE SYSTEM</div>
+          <h2>Semester & Subject Directory</h2>
+        </div>
+        <div class="view-switch-group">
+          <button id="viewSemesterTab" class="view-tab active">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            Semester Folders
+          </button>
+          <button id="viewFolderTab" class="view-tab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            Subject Folders
+          </button>
+          <button id="viewGridTab" class="view-tab">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            All Files Grid
+          </button>
+        </div>
+      </div>
+
+      <!-- SEMESTER CHIPS SELECTION BAR -->
+      <div class="semester-bar" id="semesterChips"></div>
+
+      <!-- FORMAT CATEGORY TOGGLE TABS (ALL / PDF / PHOTO) -->
+      <div class="category-switch-bar">
+        <button class="type-tab active" data-type="all">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          All Formats
+        </button>
+        <button class="type-tab" data-type="pdf">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+          PDF Documents
+        </button>
+        <button class="type-tab" data-type="photo">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          Photos & Diagrams
+        </button>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input id="search" type="text" placeholder="Search by title, subject, semester, or keyword..." autocomplete="off">
+          <button id="clearSearch" class="clear-btn hidden" aria-label="Clear search">✕</button>
+        </div>
+        <div id="chips" class="chips-group"></div>
+      </div>
+
+      <!-- BREADCRUMB NAVIGATION -->
+      <div id="breadcrumbBar" class="breadcrumb-bar hidden">
+        <button id="backToSemestersBtn" class="breadcrumb-back">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          Semesters
+        </button>
+        <span class="breadcrumb-sep">/</span>
+        <span id="breadcrumbSem" class="breadcrumb-item">Semester 1</span>
+        <span id="breadcrumbSubSep" class="breadcrumb-sep hidden">/</span>
+        <span id="breadcrumbSub" class="breadcrumb-current hidden">Subject</span>
+      </div>
+
+      <div id="loading" class="state-box">
+        <div class="spinner"></div>
+        <p>Loading semester folders and files...</p>
+      </div>
+
+      <div id="empty" class="state-box hidden">
+        <div class="empty-icon">📁</div>
+        <h3>No materials found</h3>
+        <p>Try searching for a different semester, subject folder, or category.</p>
+      </div>
+
+      <!-- VIEW MODE 1: SEMESTERS GRID -->
+      <div id="semestersGrid" class="semesters-grid"></div>
+
+      <!-- VIEW MODE 2: SUBJECT-WISE FOLDERS GRID -->
+      <div id="foldersGrid" class="folders-grid hidden"></div>
+
+      <!-- VIEW MODE 3: CARDS GRID -->
+      <div id="grid" class="cards-grid hidden"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <strong>Study Drive Hub</strong>
+        <p>Semester-wise study resource library with automated Google Drive directory sync.</p>
+      </div>
+      <span class="copyright">Hosted on Vercel & Supabase / Google Drive Cloud</span>
+    </div>
+  </footer>
+
+  <!-- PUBLIC FILE UPLOAD MODAL -->
+  <div id="publicUploadModal" class="modal hidden">
+    <div class="modal-card">
+      <button class="modal-close" id="publicUploadClose" aria-label="Close modal">✕</button>
+      <div class="badge-pill sm">SEMESTER UPLOAD</div>
+      <h2>Upload Resource to Semester Folder</h2>
+      <p class="modal-sub">Upload PDFs or Photo notes into dedicated semester and subject folders.</p>
+
+      <form id="publicUploadForm" class="upload-form">
+        <!-- Resource Category Switch (PDF vs Photo) -->
+        <div class="format-selector">
+          <label class="format-option">
+            <input type="radio" name="fileType" value="pdf" checked>
+            <div class="format-card">
+              <span class="format-icon">📄</span>
+              <strong>PDF Document</strong>
+              <small>Lecture notes, books, lab manuals</small>
+            </div>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="fileType" value="photo">
+            <div class="format-card">
+              <span class="format-icon">📷</span>
+              <strong>Photo / Diagram</strong>
+              <small>Whiteboard shots, handwritten notes</small>
+            </div>
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label>
+            <span>Semester *</span>
+            <select name="semester" id="uploadSemesterSelect" class="select-field" required>
+              <option value="Semester 1">Semester 1</option>
+              <option value="Semester 2">Semester 2</option>
+              <option value="Semester 3">Semester 3</option>
+              <option value="Semester 4">Semester 4</option>
+              <option value="Semester 5">Semester 5</option>
+              <option value="Semester 6">Semester 6</option>
+              <option value="Semester 7">Semester 7</option>
+              <option value="Semester 8">Semester 8</option>
+            </select>
+          </label>
+          <label>
+            <span>Subject / Topic Folder *</span>
+            <input name="subject" id="uploadSubjectInput" type="text" placeholder="e.g. Operating Systems" required>
+          </label>
+        </div>
+
+        <label>
+          <span>Title / Name *</span>
+          <input name="title" type="text" placeholder="e.g. Operating Systems Final Review" required>
+        </label>
+
+        <!-- Target Storage Path Indicator -->
+        <div class="path-preview-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Google Drive Target: <strong id="pathPreviewText">Google Drive / Semester 1 / general /</strong></span>
+        </div>
+
+        <label>
+          <span>Description (Optional)</span>
+          <textarea name="description" rows="2" placeholder="Mention key topics, chapter numbers, or exam dates..."></textarea>
+        </label>
+
+        <!-- Upload Mode Switch: Direct File Upload vs Link -->
+        <div class="upload-method-tabs">
+          <button type="button" class="method-tab active" id="methodFileTab">📁 Upload File from Computer</button>
+          <button type="button" class="method-tab" id="methodLinkTab">🔗 Paste Google Drive Link</button>
+        </div>
+
+        <!-- Mode 1: File Drop Zone -->
+        <div id="fileUploadSection" class="drop-zone">
+          <input type="file" id="filePicker" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif">
+          <div class="drop-zone-content">
+            <div class="drop-icon">📤</div>
+            <strong>Click to select file or drag & drop</strong>
+            <small id="filePickerLabel">Supports PDF, PNG, JPG, WEBP (Max 10MB)</small>
+          </div>
+        </div>
+
+        <!-- Mode 2: Drive URL Input -->
+        <div id="linkUploadSection" class="hidden">
+          <label>
+            <span>Google Drive / Cloud Share Link</span>
+            <input name="driveUrl" type="url" placeholder="https://drive.google.com/file/d/12345/view?usp=sharing">
+          </label>
+        </div>
+
+        <div class="form-actions mt-15">
+          <button type="submit" id="submitUploadBtn" class="btn-primary full">
+            <span>Save to Semester Folder</span>
+          </button>
+        </div>
+        <div id="uploadStatusMsg" class="form-message center"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN MODAL WITH TABS -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card wide">
+      <button class="modal-close" id="close" aria-label="Close modal">✕</button>
+      
+      <!-- LOGIN VIEW -->
+      <div id="loginView">
+        <div class="badge-pill sm">AUTHENTICATION</div>
+        <h2>Admin Portal</h2>
+        <p>Sign in with administrative credentials to manage semester directories and Google Drive settings.</p>
+        <form id="login" class="form-grid">
+          <label>
+            <span>Email Address</span>
+            <input name="email" type="email" placeholder="admin@studydrive.org" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" placeholder="••••••••" required>
+          </label>
+          <button class="btn-primary full">Authenticate Access</button>
+          <div id="loginErr" class="form-error"></div>
+        </form>
+      </div>
+
+      <!-- ADMIN PANEL VIEW -->
+      <div id="adminView" class="hidden">
+        <div class="admin-top">
+          <div>
+            <div class="badge-pill sm">ADMINISTRATOR SUITE</div>
+            <h2>Semester & Cloud Manager</h2>
+          </div>
+          <button id="logout" class="btn-ghost danger">Sign Out</button>
+        </div>
+
+        <!-- Admin Section Nav Tabs -->
+        <div class="admin-tabs">
+          <button class="admin-tab active" id="adminTabFolders">📁 Semester Tree Directory</button>
+          <button class="admin-tab" id="adminTabAdd">➕ Add Resource</button>
+          <button class="admin-tab" id="adminTabGDrive">⚙️ Google Drive Cloud Settings</button>
+        </div>
+
+        <!-- TAB 1: SEMESTER & SUBJECT FOLDER TREE -->
+        <div id="adminPaneFolders">
+          <div class="admin-list-header">
+            <h3>Semester Directory Structure</h3>
+            <span id="adminCount">0 items</span>
+          </div>
+          <div id="adminFolderList" class="admin-folder-tree"></div>
+        </div>
+
+        <!-- TAB 2: ADD / EDIT RESOURCE FORM -->
+        <div id="adminPaneAdd" class="hidden">
+          <form id="pdfForm" class="admin-form">
+            <input type="hidden" name="id">
+            <div class="form-row">
+              <label>
+                <span>Semester *</span>
+                <select name="semester" class="select-field" required>
+                  <option value="Semester 1">Semester 1</option>
+                  <option value="Semester 2">Semester 2</option>
+                  <option value="Semester 3">Semester 3</option>
+                  <option value="Semester 4">Semester 4</option>
+                  <option value="Semester 5">Semester 5</option>
+                  <option value="Semester 6">Semester 6</option>
+                  <option value="Semester 7">Semester 7</option>
+                  <option value="Semester 8">Semester 8</option>
+                </select>
+              </label>
+              <label>
+                <span>Subject Folder *</span>
+                <input name="subject" required placeholder="e.g. Computer Science">
+              </label>
+            </div>
+            <div class="form-row">
+              <label>
+                <span>Title *</span>
+                <input name="title" required placeholder="e.g. Operating Systems Chapter 4">
+              </label>
+              <label>
+                <span>Format</span>
+                <select name="fileType" class="select-field">
+                  <option value="pdf">📄 PDF Document</option>
+                  <option value="photo">📷 Photo / Image</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>Google Drive / Shareable URL *</span>
+              <input name="driveUrl" required placeholder="https://drive.google.com/file/d/12345/view?usp=sharing">
+            </label>
+            <label>
+              <span>Description</span>
+              <textarea name="description" rows="2" placeholder="Brief summary of what this covers..."></textarea>
+            </label>
+            <div class="form-actions">
+              <button class="btn-primary" id="save">Save Resource</button>
+              <button type="button" class="btn-secondary hidden" id="cancel">Cancel Editing</button>
+            </div>
+            <div id="formMsg" class="form-message"></div>
+          </form>
+        </div>
+
+        <!-- TAB 3: GOOGLE DRIVE CLOUD SETTINGS -->
+        <div id="adminPaneGDrive" class="hidden">
+          <div class="gdrive-settings-card">
+            <div class="gdrive-status-badge" id="gdriveStatusBadge">
+              <span class="status-dot"></span>
+              <strong id="gdriveStatusText">Checking Google Drive Connection...</strong>
+            </div>
+
+            <h3>Google Drive Semester Directory Sync</h3>
+            <p class="gdrive-guide-text">
+              When configured, uploaded files automatically create the following directory tree inside your Google Drive:  
+              <code>Google Drive / [Semester X] / [Subject Folder] / [File]</code>
+            </p>
+
+            <div class="code-box">
+              <code>
+                GOOGLE_CLIENT_EMAIL="your-service-account@project-id.iam.gserviceaccount.com"<br>
+                GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"<br>
+                GOOGLE_DRIVE_FOLDER_ID="1A2b3C4d5E6f7G8h9I0j"
+              </code>
+            </div>
+
+            <div class="gdrive-instructions">
+              <h4>Quick 3-Step Setup Guide:</h4>
+              <ol>
+                <li>Create a folder in your Google Drive (e.g. <code>Study Library Root</code>) and copy its Folder ID from the URL.</li>
+                <li>Go to <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, enable <strong>Google Drive API</strong>, and create a <strong>Service Account</strong> key.</li>
+                <li>Share your Google Drive root folder with the Service Account email address as an <strong>Editor</strong>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTO LIGHTBOX PREVIEW MODAL -->
+  <div id="photoLightbox" class="modal hidden">
+    <div class="lightbox-card">
+      <button class="modal-close" id="lightboxClose">✕</button>
+      <div class="lightbox-content">
+        <img id="lightboxImg" src="" alt="Photo preview">
+        <div class="lightbox-meta">
+          <h3 id="lightboxTitle">Photo Note</h3>
+          <p id="lightboxSub"></p>
+          <a id="lightboxDownloadBtn" class="btn-primary sm" target="_blank" rel="noopener" download>Download Original Photo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
