@@ -886,6 +886,42 @@ function editAdminItem(p) {
 const cancelBtn = $("#cancel");
 if (cancelBtn) cancelBtn.onclick = resetAdminForm;
 
+const syncDriveBtn = $("#syncDriveBtn");
+if (syncDriveBtn) {
+  syncDriveBtn.onclick = async () => {
+    const msg = $("#syncDriveMsg");
+    if (msg) {
+      msg.style.color = "#a5b4fc";
+      msg.textContent = "Scanning Google Drive folders... Please wait...";
+    }
+    try {
+      const session = (await sb.auth.getSession()).data.session;
+      if (!session) throw new Error("Please log in as Admin first.");
+
+      const res = await fetch("/api/sync-drive", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${session.access_token}`
+        }
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed.");
+
+      if (msg) {
+        msg.style.color = "#34d399";
+        msg.textContent = data.message || `Synced ${data.syncedCount} files!`;
+      }
+      await loadAdminItems();
+      await load();
+    } catch (err) {
+      if (msg) {
+        msg.style.color = "#ef4444";
+        msg.textContent = err.message;
+      }
+    }
+  };
+}
+
 const pdfForm = $("#pdfForm");
 if (pdfForm) {
   pdfForm.onsubmit = async e => {
