@@ -178,6 +178,57 @@ function renderSemesters() {
   });
 }
 
+function updateFolderNav() {
+  const prevBtn = $("#prevFolderBtn");
+  const nextBtn = $("#nextFolderBtn");
+  const indicator = $("#folderNavIndicator");
+  if (!prevBtn || !nextBtn || !indicator) return;
+
+  const currentSem = activeSemester || "Semester 1";
+  const semPdfs = pdfs.filter(p => (p.semester || "Semester 1").toLowerCase() === currentSem.toLowerCase());
+  const subjectsInSem = [...new Set(semPdfs.map(p => p.subject))].sort((a, b) => a.localeCompare(b));
+
+  if (activeSubjectFolder && subjectsInSem.length > 0) {
+    const currentIndex = subjectsInSem.indexOf(activeSubjectFolder);
+    const folderPos = currentIndex >= 0 ? currentIndex + 1 : 1;
+    indicator.textContent = `Folder ${folderPos} of ${subjectsInSem.length}`;
+
+    prevBtn.disabled = currentIndex <= 0;
+    nextBtn.disabled = currentIndex >= subjectsInSem.length - 1;
+
+    prevBtn.onclick = () => {
+      if (currentIndex > 0) {
+        openSubjectFolder(subjectsInSem[currentIndex - 1]);
+      }
+    };
+
+    nextBtn.onclick = () => {
+      if (currentIndex < subjectsInSem.length - 1) {
+        openSubjectFolder(subjectsInSem[currentIndex + 1]);
+      }
+    };
+  } else {
+    const semIndex = ALL_SEMESTERS.indexOf(currentSem);
+    const semPos = semIndex >= 0 ? semIndex + 1 : 1;
+    indicator.textContent = `${currentSem} (${semPos}/8)`;
+
+    prevBtn.disabled = semIndex <= 0;
+    nextBtn.disabled = semIndex >= ALL_SEMESTERS.length - 1;
+
+    prevBtn.onclick = () => {
+      if (semIndex > 0) {
+        openSemester(ALL_SEMESTERS[semIndex - 1]);
+      }
+    };
+
+    nextBtn.onclick = () => {
+      if (semIndex < ALL_SEMESTERS.length - 1) {
+        openSemester(ALL_SEMESTERS[semIndex + 1]);
+      }
+    };
+  }
+}
+
 // 2. Render Subject-wise Folders (Level 2)
 function renderSubjectFolders() {
   addClass("#semestersGrid", "hidden");
@@ -188,6 +239,8 @@ function renderSubjectFolders() {
   setText("#breadcrumbSem", activeSemester || "All Semesters");
   addClass("#breadcrumbSubSep", "hidden");
   addClass("#breadcrumbSub", "hidden");
+
+  updateFolderNav();
 
   const searchEl = $("#search");
   const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
@@ -262,6 +315,7 @@ function renderCardsGrid() {
       addClass("#breadcrumbSubSep", "hidden");
       addClass("#breadcrumbSub", "hidden");
     }
+    updateFolderNav();
   } else {
     addClass("#breadcrumbBar", "hidden");
   }

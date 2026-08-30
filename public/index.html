@@ -235,16 +235,31 @@
         <div id="chips" class="chips-group"></div>
       </div>
 
-      <!-- BREADCRUMB NAVIGATION -->
+      <!-- DIRECTORY BREADCRUMB & FOLDER PREVIOUS/FORWARD NAVIGATION TOOLBAR -->
       <div id="breadcrumbBar" class="breadcrumb-bar hidden">
-        <button id="backToSemestersBtn" class="breadcrumb-back">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
-          Semesters
-        </button>
-        <span class="breadcrumb-sep">/</span>
-        <span id="breadcrumbSem" class="breadcrumb-item">Semester 1</span>
-        <span id="breadcrumbSubSep" class="breadcrumb-sep hidden">/</span>
-        <span id="breadcrumbSub" class="breadcrumb-current hidden">Subject</span>
+        <div class="breadcrumb-left">
+          <button id="backToSemestersBtn" class="breadcrumb-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Semesters
+          </button>
+          <span class="breadcrumb-sep">/</span>
+          <span id="breadcrumbSem" class="breadcrumb-item">Semester 1</span>
+          <span id="breadcrumbSubSep" class="breadcrumb-sep hidden">/</span>
+          <span id="breadcrumbSub" class="breadcrumb-current hidden">Subject</span>
+        </div>
+
+        <!-- Folder Previous / Forward Controls -->
+        <div class="folder-nav-controls" id="folderNavControls">
+          <button id="prevFolderBtn" class="btn-folder-nav" title="Previous Subject Folder">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span>Previous Folder</span>
+          </button>
+          <span class="folder-nav-indicator" id="folderNavIndicator">Folder 1 of 1</span>
+          <button id="nextFolderBtn" class="btn-folder-nav" title="Next Subject Folder">
+            <span>Next Folder</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </div>
       </div>
 
       <div id="loading" class="state-box">

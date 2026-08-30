@@ -809,38 +809,101 @@ main {
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
 }
 
-/* BREADCRUMB BAR */
+/* BREADCRUMB & FOLDER NAVIGATION BAR */
 .breadcrumb-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding: 10px 16px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 12px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, rgba(10, 19, 36, 0.9), rgba(15, 26, 46, 0.9));
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 14px;
   font-size: 13px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  flex-wrap: wrap;
+}
+
+.breadcrumb-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .breadcrumb-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: transparent;
-  border: 0;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  padding: 6px 12px;
+  border-radius: 8px;
   color: #a5b4fc;
   font-weight: 700;
+  font-size: 12px;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .breadcrumb-back:hover {
+  background: rgba(99, 102, 241, 0.25);
   color: #fff;
-  text-decoration: underline;
 }
 
 .breadcrumb-sep { color: var(--text-sub); }
 .breadcrumb-item { color: #a5b4fc; font-weight: 600; }
 .breadcrumb-current { color: var(--text-main); font-weight: 700; }
+
+/* FOLDER PREVIOUS & FORWARD CONTROLS */
+.folder-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-folder-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-bright);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-folder-nav:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-folder-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border-dim);
+}
+
+.folder-nav-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  color: #c084fc;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  font-family: monospace;
+}
 
 /* CATEGORY FORMAT SWITCH BAR (ALL / PDF / PHOTO) */
 .category-switch-bar {
