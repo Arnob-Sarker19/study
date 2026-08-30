@@ -229,7 +229,27 @@ function updateFolderNav() {
   }
 }
 
-// 2. Render Subject-wise Folders (Level 2)
+// Helper to get immediate child folder segment under current active folder
+function getImmediateSubfolder(subjectPath, parentPath) {
+  if (!subjectPath) return null;
+  const path = String(subjectPath).trim();
+  const parent = parentPath ? String(parentPath).trim() : "";
+
+  if (!parent) {
+    // Top-level subject segment
+    return path.split(/\s*[\/\\]\s*/)[0];
+  }
+
+  if (path.toLowerCase().startsWith(parent.toLowerCase())) {
+    const remainder = path.substring(parent.length).replace(/^[\/\s]+/, "");
+    if (!remainder) return null; // File is directly inside parent
+    return remainder.split(/\s*[\/\\]\s*/)[0];
+  }
+
+  return null;
+}
+
+// 2. Render Subject-wise & Subfolder Cards (Level 2)
 function renderSubjectFolders() {
   addClass("#semestersGrid", "hidden");
   removeClass("#foldersGrid", "hidden");
@@ -237,25 +257,36 @@ function renderSubjectFolders() {
 
   removeClass("#breadcrumbBar", "hidden");
   setText("#breadcrumbSem", activeSemester || "All Semesters");
-  addClass("#breadcrumbSubSep", "hidden");
-  addClass("#breadcrumbSub", "hidden");
+
+  if (activeSubjectFolder) {
+    removeClass("#breadcrumbSubSep", "hidden");
+    removeClass("#breadcrumbSub", "hidden");
+    setText("#breadcrumbSub", activeSubjectFolder);
+  } else {
+    addClass("#breadcrumbSubSep", "hidden");
+    addClass("#breadcrumbSub", "hidden");
+  }
 
   updateFolderNav();
 
   const searchEl = $("#search");
   const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
-  const subjectsMap = {};
+  const subfoldersMap = {};
 
-  pdfs.forEach(p => {
+  const currentList = filtered();
+
+  currentList.forEach(p => {
     const semName = p.semester || "Semester 1";
-    if (activeSemester && semName.toLowerCase() !== activeSemester.toLowerCase()) return;
-    const itemType = p.fileType || (/\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "") ? "photo" : "pdf");
-    if (currentType !== "all" && itemType !== currentType) return;
-    if (q && !`${p.title} ${p.subject} ${semName} ${p.description}`.toLowerCase().includes(q)) return;
+    const subSegment = getImmediateSubfolder(p.subject, activeSubjectFolder);
+    if (!subSegment) return; // File belongs directly to current folder level
 
-    if (!subjectsMap[p.subject]) {
-      subjectsMap[p.subject] = {
-        name: p.subject,
+    const fullFolderPath = activeSubjectFolder ? `${activeSubjectFolder} / ${subSegment}` : subSegment;
+    const itemType = p.fileType || (/\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "") ? "photo" : "pdf");
+
+    if (!subfoldersMap[fullFolderPath]) {
+      subfoldersMap[fullFolderPath] = {
+        name: subSegment,
+        fullPath: fullFolderPath,
         semester: semName,
         count: 0,
         pdfCount: 0,
@@ -263,18 +294,18 @@ function renderSubjectFolders() {
         latest: p.createdAt
       };
     }
-    subjectsMap[p.subject].count++;
-    if (itemType === "photo") subjectsMap[p.subject].photoCount++;
-    else subjectsMap[p.subject].pdfCount++;
+    subfoldersMap[fullFolderPath].count++;
+    if (itemType === "photo") subfoldersMap[fullFolderPath].photoCount++;
+    else subfoldersMap[fullFolderPath].pdfCount++;
   });
 
-  const folderList = Object.values(subjectsMap).sort((a, b) => a.name.localeCompare(b.name));
-  
-  setText("#count", `${folderList.length} Subject Folders (${filtered().length} files)`);
-  toggleClass("#empty", "hidden", !!folderList.length);
+  const folderList = Object.values(subfoldersMap).sort((a, b) => a.name.localeCompare(b.name));
+
+  setText("#count", `${folderList.length} Folders (${currentList.length} files)`);
+  toggleClass("#empty", "hidden", !!folderList.length && !currentList.length);
 
   setHTML("#foldersGrid", folderList.map(f => `
-    <div class="folder-card" data-folder="${esc(f.name)}">
+    <div class="folder-card" data-folder="${esc(f.fullPath)}">
       <div class="folder-icon-box">📁</div>
       <h3 class="folder-title">${esc(f.name)}</h3>
       <div class="folder-count-pill">
@@ -283,7 +314,7 @@ function renderSubjectFolders() {
       <div class="folder-footer">
         <span>Updated ${formatDate(f.latest)}</span>
         <span class="open-folder-btn">
-          Open Folder
+          Open Subfolder
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </span>
       </div>

@@ -17,7 +17,7 @@ async function requireAuth(req) {
   return data.user;
 }
 
-// Recursively fetch all files inside a Google Drive folder
+// Recursively fetch all files inside a Google Drive folder and build nested subfolder paths
 async function scanFolderFiles(accessToken, folderId, semesterName = "Semester 1", subjectName = "General") {
   const items = [];
   const cleanId = parseFolderId(folderId);
@@ -37,7 +37,9 @@ async function scanFolderFiles(accessToken, folderId, semesterName = "Semester 1
       // Check if folder name is a Semester name (e.g. 'Semester 1' or 'Sem 1')
       const semMatch = file.name.match(/semester\s*([1-8])/i);
       const subSemester = semMatch ? `Semester ${semMatch[1]}` : semesterName;
-      const subSubject = semMatch ? subjectName : file.name;
+      const subSubject = semMatch
+        ? subjectName
+        : (subjectName && subjectName !== "General" ? `${subjectName} / ${file.name}` : file.name);
       
       const subItems = await scanFolderFiles(accessToken, file.id, subSemester, subSubject);
       items.push(...subItems);
