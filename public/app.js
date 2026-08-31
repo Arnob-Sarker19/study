@@ -247,110 +247,8 @@ function getImmediateSubfolder(subjectPath, parentPath) {
   }
 
   return null;
-}
-
-// 2. Render Subject-wise & Subfolder Cards (Level 2)
-function renderSubjectFolders() {
-  addClass("#semestersGrid", "hidden");
-  removeClass("#foldersGrid", "hidden");
-  addClass("#grid", "hidden");
-
-  removeClass("#breadcrumbBar", "hidden");
-  setText("#breadcrumbSem", activeSemester || "All Semesters");
-
-  if (activeSubjectFolder) {
-    removeClass("#breadcrumbSubSep", "hidden");
-    removeClass("#breadcrumbSub", "hidden");
-    setText("#breadcrumbSub", activeSubjectFolder);
-  } else {
-    addClass("#breadcrumbSubSep", "hidden");
-    addClass("#breadcrumbSub", "hidden");
-  }
-
-  updateFolderNav();
-
-  const searchEl = $("#search");
-  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
-  const subfoldersMap = {};
-
-  const currentList = filtered();
-
-  currentList.forEach(p => {
-    const semName = p.semester || "Semester 1";
-    const subSegment = getImmediateSubfolder(p.subject, activeSubjectFolder);
-    if (!subSegment) return; // File belongs directly to current folder level
-
-    const fullFolderPath = activeSubjectFolder ? `${activeSubjectFolder} / ${subSegment}` : subSegment;
-    const itemType = p.fileType || (/\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "") ? "photo" : "pdf");
-
-    if (!subfoldersMap[fullFolderPath]) {
-      subfoldersMap[fullFolderPath] = {
-        name: subSegment,
-        fullPath: fullFolderPath,
-        semester: semName,
-        count: 0,
-        pdfCount: 0,
-        photoCount: 0,
-        latest: p.createdAt
-      };
-    }
-    subfoldersMap[fullFolderPath].count++;
-    if (itemType === "photo") subfoldersMap[fullFolderPath].photoCount++;
-    else subfoldersMap[fullFolderPath].pdfCount++;
-  });
-
-  const folderList = Object.values(subfoldersMap).sort((a, b) => a.name.localeCompare(b.name));
-
-  setText("#count", `${folderList.length} Folders (${currentList.length} files)`);
-  toggleClass("#empty", "hidden", !!folderList.length && !currentList.length);
-
-  setHTML("#foldersGrid", folderList.map(f => `
-    <div class="folder-card" data-folder="${esc(f.fullPath)}">
-      <div class="folder-icon-box">📁</div>
-      <h3 class="folder-title">${esc(f.name)}</h3>
-      <div class="folder-count-pill">
-        <strong>${f.count} items</strong> • ${f.pdfCount} PDFs, ${f.photoCount} Photos
-      </div>
-      <div class="folder-footer">
-        <span>Updated ${formatDate(f.latest)}</span>
-        <span class="open-folder-btn">
-          Open Subfolder
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        </span>
-      </div>
-    </div>
-  `).join(""));
-
-  $$(".folder-card").forEach(card => {
-    card.onclick = () => openSubjectFolder(card.dataset.folder);
-  });
-}
-
-// 3. Render Cards Grid (Level 3)
-function renderCardsGrid() {
-  const list = filtered();
-  setText("#count", `${list.length} Files`);
-  toggleClass("#empty", "hidden", !!list.length);
-  addClass("#semestersGrid", "hidden");
-  addClass("#foldersGrid", "hidden");
-  removeClass("#grid", "hidden");
-
-  if (activeSemester || activeSubjectFolder) {
-    removeClass("#breadcrumbBar", "hidden");
-    setText("#breadcrumbSem", activeSemester || "All Semesters");
-    if (activeSubjectFolder) {
-      removeClass("#breadcrumbSubSep", "hidden");
-      removeClass("#breadcrumbSub", "hidden");
-      setText("#breadcrumbSub", activeSubjectFolder);
-    } else {
-      addClass("#breadcrumbSubSep", "hidden");
-      addClass("#breadcrumbSub", "hidden");
-    }
-    updateFolderNav();
-  } else {
-    addClass("#breadcrumbBar", "hidden");
-  }
-
+}// Reusable Card Renderer
+function renderCardsMarkup(list) {
   setHTML("#grid", list.map(p => {
     const isPhoto = p.fileType === "photo" || /\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "");
     const badgeIcon = isPhoto ? `
@@ -409,8 +307,122 @@ function renderCardsGrid() {
       if (item) openPhotoLightbox(item);
     };
   });
+}
 
-  $$(".card").forEach(attachCard3DEffect);
+// 2. Render Subject-wise & Subfolder Cards + Direct Files (Level 2)
+function renderSubjectFolders() {
+  addClass("#semestersGrid", "hidden");
+  
+  removeClass("#breadcrumbBar", "hidden");
+  setText("#breadcrumbSem", activeSemester || "All Semesters");
+
+  if (activeSubjectFolder) {
+    removeClass("#breadcrumbSubSep", "hidden");
+    removeClass("#breadcrumbSub", "hidden");
+    setText("#breadcrumbSub", activeSubjectFolder);
+  } else {
+    addClass("#breadcrumbSubSep", "hidden");
+    addClass("#breadcrumbSub", "hidden");
+  }
+
+  updateFolderNav();
+
+  const searchEl = $("#search");
+  const q = searchEl ? searchEl.value.trim().toLowerCase() : "";
+  const subfoldersMap = {};
+
+  const currentList = filtered();
+
+  currentList.forEach(p => {
+    const semName = p.semester || "Semester 1";
+    const subSegment = getImmediateSubfolder(p.subject, activeSubjectFolder);
+    if (!subSegment) return; // File belongs directly to current folder level
+
+    const fullFolderPath = activeSubjectFolder ? `${activeSubjectFolder} / ${subSegment}` : subSegment;
+    const itemType = p.fileType || (/\.(png|jpg|jpeg|webp|gif|svg)($|\?)/i.test(p.driveUrl || "") ? "photo" : "pdf");
+
+    if (!subfoldersMap[fullFolderPath]) {
+      subfoldersMap[fullFolderPath] = {
+        name: subSegment,
+        fullPath: fullFolderPath,
+        semester: semName,
+        count: 0,
+        pdfCount: 0,
+        photoCount: 0,
+        latest: p.createdAt
+      };
+    }
+    subfoldersMap[fullFolderPath].count++;
+    if (itemType === "photo") subfoldersMap[fullFolderPath].photoCount++;
+    else subfoldersMap[fullFolderPath].pdfCount++;
+  });
+
+  const folderList = Object.values(subfoldersMap).sort((a, b) => a.name.localeCompare(b.name));
+
+  setText("#count", `${folderList.length} Folders • ${currentList.length} Files`);
+  toggleClass("#empty", "hidden", !!(folderList.length || currentList.length));
+
+  if (folderList.length > 0) {
+    removeClass("#foldersGrid", "hidden");
+    setHTML("#foldersGrid", folderList.map(f => `
+      <div class="folder-card" data-folder="${esc(f.fullPath)}">
+        <div class="folder-icon-box">📁</div>
+        <h3 class="folder-title">${esc(f.name)}</h3>
+        <div class="folder-count-pill">
+          <strong>${f.count} items</strong> • ${f.pdfCount} PDFs, ${f.photoCount} Photos
+        </div>
+        <div class="folder-footer">
+          <span>Updated ${formatDate(f.latest)}</span>
+          <span class="open-folder-btn">
+            Open Subfolder
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </span>
+        </div>
+      </div>
+    `).join(""));
+
+    $$(".folder-card").forEach(card => {
+      card.onclick = () => openSubjectFolder(card.dataset.folder);
+    });
+  } else {
+    addClass("#foldersGrid", "hidden");
+  }
+
+  // ALSO render files directly in the grid below subfolders
+  if (currentList.length > 0) {
+    removeClass("#grid", "hidden");
+    renderCardsMarkup(currentList);
+  } else {
+    addClass("#grid", "hidden");
+  }
+}
+
+// 3. Render Cards Grid (Level 3)
+function renderCardsGrid() {
+  const list = filtered();
+  setText("#count", `${list.length} Files`);
+  toggleClass("#empty", "hidden", !!list.length);
+  addClass("#semestersGrid", "hidden");
+  addClass("#foldersGrid", "hidden");
+  removeClass("#grid", "hidden");
+
+  if (activeSemester || activeSubjectFolder) {
+    removeClass("#breadcrumbBar", "hidden");
+    setText("#breadcrumbSem", activeSemester || "All Semesters");
+    if (activeSubjectFolder) {
+      removeClass("#breadcrumbSubSep", "hidden");
+      removeClass("#breadcrumbSub", "hidden");
+      setText("#breadcrumbSub", activeSubjectFolder);
+    } else {
+      addClass("#breadcrumbSubSep", "hidden");
+      addClass("#breadcrumbSub", "hidden");
+    }
+    updateFolderNav();
+  } else {
+    addClass("#breadcrumbBar", "hidden");
+  }
+
+  renderCardsMarkup(list);
 }
 
 // Navigation Triggers
